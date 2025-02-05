@@ -1,4 +1,4 @@
-name: Deploy API
+name: Deploy API to Docker Hub and Beast - Production
 
 on:
   push:
@@ -9,21 +9,28 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - name: Checkout repository
+      # Checkout the repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-          fetch-depth: 0
 
-      - name: Pull latest changes
-        run: git pull origin ${{ github.ref_name }}
-
-      - name: Clean
+      # Copy repository to the desired location
+      - name: Load Repository
         run: |
-          make clean
-          docker compose down production -t 30
-          docker compose up production -d
+          cp -r ${{ github.workspace }} /home/kaden/calenduh/${{ github.ref_name }}
 
+      # Copy .env file to the branch directory
+      - name: Load Environment Variables
+        run: |
+          cp /home/kaden/calenduh/.env /home/kaden/calenduh/${{ github.ref_name }}
+
+      # Change working directory to /home/kaden/calenduh/main
+      - name: Clean
+        working-directory: /home/kaden/calenduh/${{ github.ref_name }}
+        run: |
+          make clean   # Clean up
+
+      # Optional: Pull Image and Start Container
       - name: Build & Run
+        working-directory: /home/kaden/calenduh/${{ github.ref_name }}
         run: |
           make
