@@ -14,20 +14,16 @@ jobs:
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
-          path: /home/kaden/calenduh
 
       - name: Pull latest changes
-        working-directory: /home/kaden/calenduh
         run: git pull origin ${{ github.ref_name }}
 
       - name: Clean
-        working-directory: /home/kaden/calenduh
         run: |
           make clean
           docker compose down production -t 30
           docker compose up production -d
 
       - name: Build & Run
-        working-directory: /home/kaden/calenduh
         run: |
           make
