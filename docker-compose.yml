@@ -1,0 +1,38 @@
+volumes:
+  cache:
+    driver: local
+  database:
+    name: database
+
+services:
+  mongo:
+    image: mongo
+    container_name: mongo
+    env_file:
+      - .env
+    networks:
+      - network
+    ports:
+      - ${MONGO_EXTERNAL_PORT}:${MONGO_INTERNAL_PORT}
+    volumes:
+      - database:/data/db
+
+  calenduh-api:
+    container_name: calenduh-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    networks:
+      - network
+    ports:
+      - "80:9090"
+    volumes:
+      - cache:/var/lib/cache
+    depends_on:
+      - mongo
+
+networks:
+  network:
+    driver: bridge
