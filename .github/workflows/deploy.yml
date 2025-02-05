@@ -1,0 +1,34 @@
+name: Deploy API
+
+on:
+  push:
+    branches:
+      - "main"
+      - "dev"
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          path: /home/kaden/calenduh/${{ github.ref_name }}
+
+      - name: Pull latest changes
+        working-directory: /home/kaden/calenduh/${{ github.ref_name }}
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Clean
+        working-directory: /home/kaden/calenduh/${{ github.ref_name }}
+        run: |
+          make clean
+          docker compose down production -t 30
+          docker compose up production -d
+
+      - name: Build & Run
+        working-directory: /home/kaden/calenduh/${{ github.ref_name }}
+        run: |
+          make
