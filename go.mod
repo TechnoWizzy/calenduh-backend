@@ -1,4 +1,4 @@
-module hp-backend
+module calenduh-backend
 
 go 1.22.0
 
@@ -8,11 +8,9 @@ require (
 	github.com/JGLTechnologies/gin-rate-limit v1.5.4
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/gin-gonic/gin v1.10.0
-	github.com/go-resty/resty/v2 v2.16.2
 	github.com/google/uuid v1.6.0
 	github.com/matoous/go-nanoid/v2 v2.1.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/rogpeppe/go-internal v1.12.0
 	go.mongodb.org/mongo-driver v1.16.1
 )
 
@@ -42,6 +40,7 @@ require (
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/redis/go-redis/v9 v9.0.2 // indirect
+	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
