@@ -97,7 +97,7 @@ func AppleLogin(c *gin.Context) {
 	}
 
 	log.Print(data)
-	c.Abort()
+	c.AbortWithStatus(http.StatusBadRequest)
 }
 
 // Logout
