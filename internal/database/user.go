@@ -1,10 +1,10 @@
 package database
 
 import (
+	"calenduh-backend/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/matoous/go-nanoid/v2"
 	"go.mongodb.org/mongo-driver/bson"
-	"hp-backend/internal/util"
 )
 
 type User struct {

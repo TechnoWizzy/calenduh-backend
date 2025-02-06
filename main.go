@@ -1,12 +1,12 @@
 package main
 
 import (
+	"calenduh-backend/internal/controllers"
+	"calenduh-backend/internal/database"
+	"calenduh-backend/internal/util"
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"hp-backend/internal/controllers"
-	"hp-backend/internal/database"
-	"hp-backend/internal/util"
 	"log"
 	"net/http"
 	"os"
@@ -76,6 +76,7 @@ func setupRoutes(router *gin.Engine) {
 	users := router.Group("/users")
 	{
 		authentication.POST("/local/login", controllers.Logout, controllers.LocalLogin)
+		authentication.POST("/apple/login", controllers.AppleLogin)
 		authentication.GET("/logout", controllers.Logout)
 	}
 	{

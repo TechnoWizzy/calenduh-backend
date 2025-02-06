@@ -1,12 +1,12 @@
 package controllers
 
 import (
+	"calenduh-backend/internal/util"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/matoous/go-nanoid/v2"
-	"hp-backend/internal/util"
 	"net/http"
 )
 

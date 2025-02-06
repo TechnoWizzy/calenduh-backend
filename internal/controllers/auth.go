@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"hp-backend/internal/database"
-	"hp-backend/internal/util"
+	"calenduh-backend/internal/database"
+	"calenduh-backend/internal/util"
+	"log"
 	"net/http"
 	"time"
 
@@ -81,6 +82,22 @@ func LocalLogin(c *gin.Context) {
 	c.SetCookie("session_id", session.Id, expireTime, "/", c.Request.Host, true, true)
 	c.Redirect(http.StatusTemporaryRedirect, util.GetProtocol(c)+util.GetHostAddress(c)+"/users/@me")
 	return
+}
+
+// AppleLogin
+// @Summary Apple Login
+// @Description Handles the login from Apple SignIn and creates a session.
+func AppleLogin(c *gin.Context) {
+	var data any
+	err := c.BindJSON(&data)
+	if err != nil {
+		message := gin.H{"message": "unable to parse body"}
+		c.AbortWithStatusJSON(http.StatusBadRequest, message)
+		return
+	}
+
+	log.Print(data)
+	c.Abort()
 }
 
 // Logout

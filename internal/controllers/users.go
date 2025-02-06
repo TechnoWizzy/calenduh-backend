@@ -1,8 +1,8 @@
 package controllers
 
 import (
+	"calenduh-backend/internal/database"
 	"errors"
-	"hp-backend/internal/database"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

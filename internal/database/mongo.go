@@ -1,11 +1,11 @@
 package database
 
 import (
+	"calenduh-backend/internal/util"
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"hp-backend/internal/util"
 	"log"
 	"time"
 )
