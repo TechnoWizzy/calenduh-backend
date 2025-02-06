@@ -1,4 +1,4 @@
-name: Deploy API to Docker Hub and Beast - Production
+name: Deploy API
 
 on:
   push:
@@ -16,6 +16,7 @@ jobs:
       # Copy repository to the desired location
       - name: Load Repository
         run: |
+          rm -rf /home/kaden/calenduh/${{ github.ref_name }}
           cp -r ${{ github.workspace }} /home/kaden/calenduh/${{ github.ref_name }}
 
       # Copy .env file to the branch directory
