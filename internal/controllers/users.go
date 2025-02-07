@@ -91,9 +91,6 @@ func ValidateUpdateUserOptions(options *database.UpdateUserOptions) error {
 	if options.Username == "" {
 		return errors.New("username cannot be empty")
 	}
-	if options.Password == "" {
-		return errors.New("password cannot be empty")
-	}
 
 	return nil
 }

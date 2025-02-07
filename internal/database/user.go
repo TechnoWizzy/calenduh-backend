@@ -1,29 +1,25 @@
 package database
 
 import (
-	"calenduh-backend/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/matoous/go-nanoid/v2"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type User struct {
-	Id       string `bson:"_id"`
-	Email    string `bson:"email"`
-	Username string `bson:"username"`
-	Password string `bson:"password"`
+	Id       string `json:"id" bson:"_id"`
+	Email    string `json:"email" bson:"email"`
+	Username string `json:"username" bson:"username"`
 }
 
 type CreateUserOptions struct {
 	Email    string
 	Username string
-	Password string
 }
 
 type UpdateUserOptions struct {
 	Email    string
 	Username string
-	Password string
 }
 
 func CreateUser(c *gin.Context, options *CreateUserOptions) (*User, error) {
@@ -32,7 +28,6 @@ func CreateUser(c *gin.Context, options *CreateUserOptions) (*User, error) {
 		Id:       id,
 		Email:    options.Email,
 		Username: options.Username,
-		Password: options.Password,
 	}
 
 	_, err := Users.InsertOne(c, user)
@@ -83,7 +78,6 @@ func UpdateUser(c *gin.Context, id string, options *UpdateUserOptions) (*User, e
 	opts := bson.D{{"$set", bson.A{
 		bson.D{{"email", options.Email}},
 		bson.D{{"username", options.Username}},
-		bson.D{{"password", util.GetHash(options.Password + util.GetHash(options.Email))}},
 	}}}
 
 	_, err := Users.UpdateByID(c, id, opts)

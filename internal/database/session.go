@@ -8,12 +8,12 @@ import (
 )
 
 type Session struct {
-	Id           string `bson:"_id"`
-	UserId       string `bson:"user_id"`
-	Type         string `bson:"type"`
-	AccessToken  string `bson:"access_token"`
-	RefreshToken string `bson:"refresh_token"`
-	ExpiresOn    int64  `bson:"expires_on"`
+	Id           string `json:"id" bson:"_id"`
+	UserId       string `json:"user_id" bson:"user_id"`
+	Type         string `json:"type" bson:"type"`
+	AccessToken  string `json:"access_token" bson:"access_token"`
+	RefreshToken string `json:"refresh_token" bson:"refresh_token"`
+	ExpiresOn    int64  `json:"expires_on" bson:"expires_on"`
 }
 
 type CreateSessionOptions struct {
@@ -25,7 +25,7 @@ type CreateSessionOptions struct {
 }
 
 const (
-	LocalSession = "LOCAL"
+	AppleSession = "APPLE"
 )
 
 func CreateSession(c *gin.Context, options *CreateSessionOptions) (*Session, error) {

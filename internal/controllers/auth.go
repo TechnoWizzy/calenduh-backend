@@ -8,21 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/mongo"
 	"io"
-	"log"
 	"math/big"
 	"net/http"
-	"time"
-
-	"github.com/gin-gonic/gin"
 )
-
-// LocalLoginBody is the structure of a login request.
-type LocalLoginBody struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
 
 type AppleLoginBody struct {
 	AuthorizationCode string  `json:"authorizationCode"`
@@ -70,48 +62,6 @@ func Authorize(c *gin.Context) {
 	return
 }
 
-// LocalLogin
-// @Summary Local login
-// @Description Handles user login via email and password with rate limiting.
-func LocalLogin(c *gin.Context) {
-	var localLoginBody LocalLoginBody
-	err := c.BindJSON(&localLoginBody)
-	if err != nil {
-		message := gin.H{"message": "unable to parse body"}
-		c.AbortWithStatusJSON(http.StatusBadRequest, message)
-		return
-	}
-
-	user, err := database.FetchUserByEmail(c, localLoginBody.Email)
-	if err != nil {
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
-
-	hash := util.GetHash(localLoginBody.Password + util.GetHash(localLoginBody.Email))
-	if hash != user.Password {
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
-
-	expireTime := 60 * 60 * 24
-	session, err := database.CreateSession(c, &database.CreateSessionOptions{
-		UserId:       user.Id,
-		AccessToken:  localLoginBody.Password,
-		Type:         database.LocalSession,
-		RefreshToken: "",
-		ExpiresOn:    time.Now().Add(time.Duration(expireTime) * time.Second),
-	})
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
-		return
-	}
-
-	c.SetCookie("session_id", session.Id, expireTime, "/", c.Request.Host, true, true)
-	c.Redirect(http.StatusTemporaryRedirect, util.GetProtocol(c)+util.GetHostAddress(c)+"/users/@me")
-	return
-}
-
 // AppleLogin
 // @Summary Apple Login
 // @Description Handles the login from Apple SignIn and creates a session.
@@ -124,14 +74,53 @@ func AppleLogin(c *gin.Context) {
 		return
 	}
 
-	log.Print(appleLoginBody.UserId)
 	token, err := verifyToken(appleLoginBody.IdentityToken)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-	} else {
-		c.PureJSON(http.StatusOK, gin.H{"token": token})
+		return
 	}
+
+	var email string
+	if appleLoginBody.Email != nil {
+		email = *appleLoginBody.Email
+	} else {
+		email = token.Claims.(jwt.MapClaims)["email"].(string)
+	}
+
+	user, err := database.FetchUserById(c, appleLoginBody.UserId)
+
+	if err != nil { // No user
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			user, err = database.CreateUser(c, &database.CreateUserOptions{
+				Email:    email,
+				Username: email,
+			})
+
+			if err != nil { // Could not create user
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+		} else { // Failed to fetch user
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	session, err := database.CreateSession(c, &database.CreateSessionOptions{
+		UserId: user.Id,
+		Type:   database.AppleSession,
+	})
+
+	if err != nil { // Failed to create session
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+	}
+
+	c.PureJSON(http.StatusOK, gin.H{
+		"session": session,
+		"user":    user,
+	})
+	return
 }
 
 // Logout
