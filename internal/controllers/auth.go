@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -74,6 +75,7 @@ func AppleLogin(c *gin.Context) {
 		return
 	}
 
+	spew.Dump(appleLoginBody)
 	token, err := verifyToken(appleLoginBody.IdentityToken)
 
 	if err != nil {
