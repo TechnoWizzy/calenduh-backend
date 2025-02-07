@@ -95,7 +95,7 @@ func AppleLogin(c *gin.Context) {
 	if err != nil { // No user
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			user, err = database.CreateUser(c, &database.CreateUserOptions{
-				Id:       appleLoginBody.UserId,
+				Id:       &appleLoginBody.UserId,
 				Email:    email,
 				Username: email,
 			})
