@@ -75,7 +75,6 @@ func setupRoutes(router *gin.Engine) {
 	authentication := router.Group("/auth")
 	users := router.Group("/users")
 	{
-		authentication.POST("/local/login", controllers.Logout, controllers.LocalLogin)
 		authentication.POST("/apple/login", controllers.AppleLogin)
 		authentication.GET("/logout", controllers.Logout)
 	}
