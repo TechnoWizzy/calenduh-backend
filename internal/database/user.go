@@ -13,6 +13,7 @@ type User struct {
 }
 
 type CreateUserOptions struct {
+	Id       *string
 	Email    string
 	Username string
 }
@@ -23,7 +24,12 @@ type UpdateUserOptions struct {
 }
 
 func CreateUser(c *gin.Context, options *CreateUserOptions) (*User, error) {
-	id := gonanoid.Must()
+	var id string
+	if options.Id != nil {
+		id = *options.Id
+	} else {
+		id = gonanoid.Must()
+	}
 	user := User{
 		Id:       id,
 		Email:    options.Email,
