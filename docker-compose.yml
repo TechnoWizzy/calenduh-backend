@@ -19,6 +19,7 @@ services:
 
   calenduh-api:
     container_name: calenduh-api
+    restart: always
     build:
       context: .
       dockerfile: Dockerfile
