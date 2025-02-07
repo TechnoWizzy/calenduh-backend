@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"io"
+	"log"
 	"math/big"
 	"net/http"
 	"time"
@@ -26,6 +27,7 @@ type LocalLoginBody struct {
 type AppleLoginBody struct {
 	AuthorizationCode string  `json:"authorizationCode"`
 	IdentityToken     string  `json:"identityToken"`
+	UserId            string  `json:"user"`
 	Email             *string `json:"email,omitempty"`
 }
 
@@ -122,6 +124,7 @@ func AppleLogin(c *gin.Context) {
 		return
 	}
 
+	log.Print(appleLoginBody.UserId)
 	token, err := verifyToken(appleLoginBody.IdentityToken)
 
 	if err != nil {
