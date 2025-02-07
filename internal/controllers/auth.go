@@ -114,6 +114,7 @@ func AppleLogin(c *gin.Context) {
 
 	if err != nil { // Failed to create session
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
 
 	c.PureJSON(http.StatusOK, gin.H{

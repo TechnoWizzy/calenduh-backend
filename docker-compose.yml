@@ -6,7 +6,7 @@ volumes:
 
 services:
   mongo:
-    image: mongo
+    image: mongo:4.4.6
     container_name: mongo
     env_file:
       - .env
