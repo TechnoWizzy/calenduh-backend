@@ -11,7 +11,12 @@ import (
 )
 
 var Users *mongo.Collection
+var Groups *mongo.Collection
+var Events *mongo.Collection
 var Sessions *mongo.Collection
+var Calendars *mongo.Collection
+var GroupMembers *mongo.Collection
+var SubscribesTo *mongo.Collection
 
 func New() *mongo.Client {
 	var client *mongo.Client
@@ -39,7 +44,12 @@ func New() *mongo.Client {
 
 	database := client.Database(util.GetEnv("MONGO_INITDB_DATABASE"))
 	Users = database.Collection("users")
+	Groups = database.Collection("groups")
+	Events = database.Collection("events")
 	Sessions = database.Collection("sessions")
+	Calendars = database.Collection("calendars")
+	GroupMembers = database.Collection("belongs_to")
+	SubscribesTo = database.Collection("subscribes_to")
 
 	return client
 }
