@@ -150,6 +150,14 @@ func FetchEventNameById(c *gin.Context, id string) (*Event, error) {
 }
 
 // GETTERS
+func (e *Event) GetCalendarId() string {
+	return e.CalendarId
+}
+
+func (e *Event) GetEventId() string {
+	return e.EventId
+}
+
 func (e *Event) GetName() string {
 	return e.Name
 }
@@ -183,6 +191,14 @@ func (e *Event) GetPriority() int {
 }
 
 // SETTERS
+func (e *Event) SetCalendarId(calendarId string) {
+	e.CalendarId = calendarId
+}
+
+func (e *Event) SetEventId(eventId string) {
+	e.EventId = eventId
+}
+
 func (e *Event) SetName(name string) {
     e.Name = name
 }
