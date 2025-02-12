@@ -16,7 +16,7 @@ var Events *mongo.Collection
 var Sessions *mongo.Collection
 var Calendars *mongo.Collection
 var GroupMembers *mongo.Collection
-var SubscribesTo *mongo.Collection
+var Subscriptions *mongo.Collection // var SubscribesTo *mongo.Collection
 
 func New() *mongo.Client {
 	var client *mongo.Client
@@ -49,7 +49,7 @@ func New() *mongo.Client {
 	Sessions = database.Collection("sessions")
 	Calendars = database.Collection("calendars")
 	GroupMembers = database.Collection("belongs_to")
-	SubscribesTo = database.Collection("subscribes_to")
+	Subscriptions = database.Collection("subscribes_to")
 
 	return client
 }

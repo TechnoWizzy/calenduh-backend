@@ -8,40 +8,40 @@ import (
 )
 
 type Event struct {
-	EventId			string `json:"event_id" bson:"_id"`
-	CalendarId 		string `json:"calendar_id" bson:"calendar_id"`
-	Name			string `json:"name" bson:"name"`	
-	Start 			time.Time `json:"start" bson:"start"` // Start date and time
-	End 			time.Time `json:"end" bson:"end"` // End date and time
-	Location 		string `json:"location" bson:"location"`
-	Description 	string `json:"description" bson:"description"`
-	Notification 	string `json:"notification" bson:"notification"` // (contains time offset in milliseconds)
-	Frequency 		string `json:"frequency" bson:"frequency"`
-	Priority 		int `json:"priority" bson:"priority"`
+	EventId			string 		`json:"event_id" bson:"_id"`
+	CalendarId 		string 		`json:"calendar_id" bson:"calendar_id"`
+	Name			string 		`json:"name" bson:"name"`	
+	Start 			time.Time 	`json:"start" bson:"start"` // Start date and time
+	End 			time.Time 	`json:"end" bson:"end"` // End date and time
+	Location 		string 		`json:"location" bson:"location"`
+	Description 	string 		`json:"description" bson:"description"`
+	Notification 	string 		`json:"notification" bson:"notification"` // (contains time offset in milliseconds)
+	Frequency 		string 		`json:"frequency" bson:"frequency"`
+	Priority 		int 		`json:"priority" bson:"priority"`
 }
 
 type CreateEventOptions struct {
-	EventId string
-	CalendarId string
-	Name string
-	Start time.Time
-	End time.Time
-	Location string
-	Description string
-	Notification string
-	Frequency string
-	Priority int
+	EventId 		string
+	CalendarId 		string
+	Name 			string
+	Start 			time.Time
+	End 			time.Time
+	Location 		string
+	Description 	string
+	Notification 	string
+	Frequency 		string
+	Priority 		int
 }
 
 type UpdateEventOptions struct {
-	Name string
-	Start time.Time
-	End time.Time
-	Location string
-	Description string
-	Notification string
-	Frequency string
-	Priority int
+	Name 			string
+	Start 			time.Time
+	End 			time.Time
+	Location 		string
+	Description 	string
+	Notification 	string
+	Frequency 		string
+	Priority 		int
 }
 
 func CreateEvent(c *gin.Context, options *CreateEventOptions) (*Event, error) {
@@ -230,21 +230,3 @@ func (e *Event) SetFrequency(frequency string) {
 func (e *Event) SetPriority(priority int) {
     e.Priority = priority
 }
-/*
-getEventId()
-getCalendarId()
-getName()
-setName()
-getStartDate()
-setStartDate()
-getLocation()
-setLocation()
-getDescription()
-setDescription()
-getNotification()
-setNotification()
-getFrequency()
-setFrequency()
-getPriority()
-setPriority()
-*/
