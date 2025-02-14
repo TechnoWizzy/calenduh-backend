@@ -1,6 +1,7 @@
 package database
 
 import (
+	
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -35,7 +36,7 @@ func Subscribe(c *gin.Context, options *SubscribeOptions) (*Subscription, error)
 }
 
 
-func Unsubscribe(c *gin.Context, options *SubscribeOptions) (*Subscription, error) {
+func Unsubscribe(c *gin.Context, options *UnsubscribeOptions) (*Subscription, error) {
 	sub := Subscription {
 		UserId:		options.UserId,
 		CalendarId:	options.CalendarId,
@@ -54,19 +55,20 @@ func Unsubscribe(c *gin.Context, options *SubscribeOptions) (*Subscription, erro
 	return &sub, nil
 }
 
-func FetchSubscribedCalendarById(c *gin.Context, id string) (*Subscription, error) {
-	var sub Subscription
-	filter := bson.D{{"calendar_id", id}}
-	result := Subscriptions.FindOne(c, filter)
-	if err := result.Decode(&sub); err != nil {
-		return nil, err
-	}
-	return &sub, nil
-}
+// FetchAllSubscriptions already fetches all subscribed calendars. May not need this one
+// func FetchSubscribedCalendarById(c *gin.Context, id string) (*Subscription, error) {
+// 	var sub Subscription
+// 	filter := bson.D{{"calendar_id", id}}
+// 	result := Subscriptions.FindOne(c, filter)
+// 	if err := result.Decode(&sub); err != nil {
+// 		return nil, err
+// 	}
+// 	return &sub, nil
+// }
 
-func FetchAllSubscriptions(c *gin.Context) (*[]Subscription, error) { // TODO: see if I should return a pointer
+func FetchAllSubscriptions(c *gin.Context, user_id string) (*[]Subscription, error) { // TODO: see if I should return a pointer
 	var subs []Subscription
-	filter := bson.D{}
+	filter := bson.D{{"user_id", user_id}}
 	cursor, err := Subscriptions.Find(c, filter)
 	if err != nil {
 		return nil, err

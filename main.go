@@ -3,16 +3,18 @@ package main
 import (
 	"calenduh-backend/internal/controllers"
 	"calenduh-backend/internal/database"
+	"calenduh-backend/internal/routes"
 	"calenduh-backend/internal/util"
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -82,6 +84,7 @@ func setupRoutes(router *gin.Engine) {
 		users.GET("/@me", controllers.GetMe)
 		users.PUT("/@me", controllers.UpdateUser)
 	}
+	routes.RegisterEventRoutes(router)
 }
 
 func cleanup(server *http.Server) {
