@@ -1,61 +1,60 @@
 package database
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/matoous/go-nanoid/v2"
 	"go.mongodb.org/mongo-driver/bson"
-	"time"
 )
 
 type Event struct {
-	EventId			string 		`json:"event_id" bson:"_id"`
-	CalendarId 		string 		`json:"calendar_id" bson:"calendar_id"`
-	Name			string 		`json:"name" bson:"name"`	
-	Start 			time.Time 	`json:"start" bson:"start"` // Start date and time
-	End 			time.Time 	`json:"end" bson:"end"` // End date and time
-	Location 		string 		`json:"location" bson:"location"`
-	Description 	string 		`json:"description" bson:"description"`
-	Notification 	string 		`json:"notification" bson:"notification"` // (contains time offset in milliseconds)
-	Frequency 		string 		`json:"frequency" bson:"frequency"`
-	Priority 		int 		`json:"priority" bson:"priority"`
+	Id           string `json:"id" bson:"_id"`
+	CalendarId   string `json:"calendar_id" bson:"calendar_id"`
+	Name         string `json:"name" bson:"name"`
+	Start        int64  `json:"start" bson:"start"` // Start date and time
+	End          int64  `json:"end" bson:"end"`     // End date and time
+	Location     string `json:"location" bson:"location"`
+	Description  string `json:"description" bson:"description"`
+	Notification string `json:"notification" bson:"notification"` // (contains time offset in milliseconds)
+	Frequency    string `json:"frequency" bson:"frequency"`
+	Priority     int    `json:"priority" bson:"priority"`
 }
 
 type CreateEventOptions struct {
-	EventId 		string
-	CalendarId 		string
-	Name 			string
-	Start 			time.Time
-	End 			time.Time
-	Location 		string
-	Description 	string
-	Notification 	string
-	Frequency 		string
-	Priority 		int
+	CalendarId   string `json:"calendar_id" bson:"calendar_id"`
+	Name         string `json:"name" bson:"name"`
+	Start        int64  `json:"start" bson:"start"`
+	End          int64  `json:"end" bson:"end"`
+	Location     string `json:"location" bson:"location"`
+	Description  string `json:"description" bson:"description"`
+	Notification string `json:"notification" bson:"notification"`
+	Frequency    string `json:"frequency" bson:"frequency"`
+	Priority     int    `json:"priority" bson:"priority"`
 }
 
 type UpdateEventOptions struct {
-	Name 			string
-	Start 			time.Time
-	End 			time.Time
-	Location 		string
-	Description 	string
-	Notification 	string
-	Frequency 		string
-	Priority 		int
+	Name         string `json:"name" bson:"name"`
+	Start        int64  `json:"start" bson:"start"`
+	End          int64  `json:"end" bson:"end"`
+	Location     string `json:"location" bson:"location"`
+	Description  string `json:"description" bson:"description"`
+	Notification string `json:"notification" bson:"notification"`
+	Frequency    string `json:"frequency" bson:"frequency"`
+	Priority     int    `json:"priority" bson:"priority"`
 }
 
 func CreateEvent(c *gin.Context, options *CreateEventOptions) (*Event, error) {
-	event := Event {
-		EventId:		gonanoid.Must(),
-		CalendarId: 	options.CalendarId, // TODO: where is calendarId retrieved from? see calendar.go
-		Name: 			options.Name,
-		Start: 			options.Start,
-		End: 			options.End,
-		Location: 		options.Location,
-		Description:	options.Description,
-		Notification: 	options.Notification,
-		Frequency: 		options.Frequency,
-		Priority:		options.Priority,
+	event := Event{
+		Id:           gonanoid.Must(),
+		CalendarId:   options.CalendarId,
+		Name:         options.Name,
+		Start:        options.Start,
+		End:          options.End,
+		Location:     options.Location,
+		Description:  options.Description,
+		Notification: options.Notification,
+		Frequency:    options.Frequency,
+		Priority:     options.Priority,
 	}
 
 	_, err := Events.InsertOne(c, event)
@@ -95,10 +94,10 @@ func UpdateEvent(c *gin.Context, id string, options *UpdateEventOptions) (*Event
 	if options.Name != "" {
 		update = append(update, bson.E{"name", options.Name})
 	}
-	if !options.Start.IsZero() {
+	if options.Start != 0 {
 		update = append(update, bson.E{"start", options.Start})
 	}
-	if !options.End.IsZero() {
+	if options.End != 0 {
 		update = append(update, bson.E{"end", options.End})
 	}
 	if options.Location != "" {
@@ -119,7 +118,7 @@ func UpdateEvent(c *gin.Context, id string, options *UpdateEventOptions) (*Event
 
 	// no fields = do not update anything
 	if len(update) == 0 {
-		return nil, nil
+		return nil, errors.New("no updates were provided")
 	}
 
 	opts := bson.D{{"$set", update}}
@@ -147,86 +146,4 @@ func FetchEventNameById(c *gin.Context, id string) (*Event, error) {
 		return nil, err
 	}
 	return &event, nil
-}
-
-// GETTERS
-func (e *Event) GetCalendarId() string {
-	return e.CalendarId
-}
-
-func (e *Event) GetEventId() string {
-	return e.EventId
-}
-
-func (e *Event) GetName() string {
-	return e.Name
-}
-
-func (e *Event) GetStartDate() time.Time {
-	return e.Start
-}
-
-func (e *Event) GetEndDate() time.Time {
-	return e.End
-}
-
-func (e *Event) GetLocation() string {
-	return e.Location
-}
-
-func (e *Event) GetDescription() string {
-	return e.Description
-}
-
-func (e *Event) GetNotification() string {
-	return e.Notification
-}
-
-func (e *Event) GetFrequency() string {
-	return e.Frequency
-}
-
-func (e *Event) GetPriority() int {
-	return e.Priority
-}
-
-// SETTERS
-func (e *Event) SetCalendarId(calendarId string) {
-	e.CalendarId = calendarId
-}
-
-func (e *Event) SetEventId(eventId string) {
-	e.EventId = eventId
-}
-
-func (e *Event) SetName(name string) {
-    e.Name = name
-}
-
-func (e *Event) SetStartDate(start time.Time) {
-    e.Start = start
-}
-
-func (e *Event) SetEndDate(end time.Time) {
-    e.End = end
-}
-
-func (e *Event) SetLocation(location string) {
-    e.Location = location
-}
-
-func (e *Event) SetDescription(description string) {
-    e.Description = description
-}
-
-func (e *Event) SetNotification(notification string) {
-    e.Notification = notification
-}
-
-func (e *Event) SetFrequency(frequency string) {
-    e.Frequency = frequency
-}
-
-func (e *Event) SetPriority(priority int) {
-    e.Priority = priority
 }

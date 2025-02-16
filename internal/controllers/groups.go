@@ -1,8 +1,8 @@
-package handlers
+package controllers
 
 import (
-	"github.com/gin-gonic/gin"
 	"calenduh-backend/internal/database"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 

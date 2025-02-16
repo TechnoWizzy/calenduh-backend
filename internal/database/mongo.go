@@ -16,7 +16,7 @@ var Events *mongo.Collection
 var Sessions *mongo.Collection
 var Calendars *mongo.Collection
 var GroupMembers *mongo.Collection
-var Subscriptions *mongo.Collection // var SubscribesTo *mongo.Collection
+var Subscriptions *mongo.Collection
 
 func New() *mongo.Client {
 	var client *mongo.Client

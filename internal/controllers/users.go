@@ -3,9 +3,8 @@ package controllers
 import (
 	"calenduh-backend/internal/database"
 	"errors"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 type UserResponse struct {

@@ -1,30 +1,32 @@
 package database
 
 import (
-	
+	"errors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Subscription struct {
-	UserId			string `json:"user_id" bson:"user_id"`
-	CalendarId 		string `json:"calendar_id" bson:"calendar_id"`
+	Id           string `json:"id" bson:"_id"`
+	SubscriberId string `json:"subscriber_id" bson:"subscriber_id"`
+	CalendarId   string `json:"calendar_id" bson:"calendar_id"`
 }
 
 type SubscribeOptions struct {
-	UserId 		string
-	CalendarId 	string
+	SubscriberId string `json:"subscriber_id"`
+	CalendarId   string `json:"calendar_id"`
 }
 
 type UnsubscribeOptions struct {
-	UserId			string
-	CalendarId 		string
+	UserId     string
+	CalendarId string
 }
 
-func Subscribe(c *gin.Context, options *SubscribeOptions) (*Subscription, error) {
-	sub := Subscription {
-		UserId:		options.UserId,
-		CalendarId:	options.CalendarId,
+func CreateSubscription(c *gin.Context, options *SubscribeOptions) (*Subscription, error) {
+	sub := Subscription{
+		Id:           options.SubscriberId + options.CalendarId,
+		SubscriberId: options.SubscriberId,
+		CalendarId:   options.CalendarId,
 	}
 
 	_, err := Subscriptions.InsertOne(c, sub)
@@ -35,55 +37,34 @@ func Subscribe(c *gin.Context, options *SubscribeOptions) (*Subscription, error)
 	return &sub, nil
 }
 
-
-func Unsubscribe(c *gin.Context, options *UnsubscribeOptions) (*Subscription, error) {
-	sub := Subscription {
-		UserId:		options.UserId,
-		CalendarId:	options.CalendarId,
-	}
-
+func DeleteSubscription(c *gin.Context, subscriberId string, calendarId string) error {
 	filter := bson.D{
-		{"user_id", options.UserId},
-		{"calendar_id", options.CalendarId},
-	}
-	_, err := Subscriptions.DeleteOne(c, filter)
-	//_, err := Subscriptions.DeleteOne(c, sub)
-	if err != nil {
-		return nil, err
+		{"_id", subscriberId + calendarId},
 	}
 
-	return &sub, nil
+	result, err := Subscriptions.DeleteOne(c, filter)
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return errors.New("subscription not found")
+	}
+
+	return nil
 }
 
-// FetchAllSubscriptions already fetches all subscribed calendars. May not need this one
-// func FetchSubscribedCalendarById(c *gin.Context, id string) (*Subscription, error) {
-// 	var sub Subscription
-// 	filter := bson.D{{"calendar_id", id}}
-// 	result := Subscriptions.FindOne(c, filter)
-// 	if err := result.Decode(&sub); err != nil {
-// 		return nil, err
-// 	}
-// 	return &sub, nil
-// }
-
-func FetchAllSubscriptions(c *gin.Context, user_id string) (*[]Subscription, error) { // TODO: see if I should return a pointer
-	var subs []Subscription
-	filter := bson.D{{"user_id", user_id}}
+func FetchAllSubscriptions(c *gin.Context, subscriberId string) (*[]Subscription, error) {
+	var subscriptions []Subscription
+	filter := bson.D{{"subscriber_", subscriberId}}
 	cursor, err := Subscriptions.Find(c, filter)
 	if err != nil {
 		return nil, err
 	}
-	if err = cursor.All(c, &subs); err != nil {
+
+	if err = cursor.All(c, &subscriptions); err != nil {
 		return nil, err
 	}
-	return &subs, nil
-}
 
-// GETTERS
-func (e *SubscribeOptions) GetCalendarId_() string {
-	return e.CalendarId
-}
-
-func (e *Subscription) GetUserId_() string {
-	return e.UserId
+	return &subscriptions, nil
 }

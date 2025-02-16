@@ -3,7 +3,6 @@ package main
 import (
 	"calenduh-backend/internal/controllers"
 	"calenduh-backend/internal/database"
-	"calenduh-backend/internal/routes"
 	"calenduh-backend/internal/util"
 	"context"
 	"fmt"
@@ -76,6 +75,9 @@ func main() {
 func setupRoutes(router *gin.Engine) {
 	authentication := router.Group("/auth")
 	users := router.Group("/users")
+	events := router.Group("/event")
+	groups := router.Group("/groups")
+	subscriptions := router.Group("/subscriptions")
 	{
 		authentication.POST("/apple/login", controllers.AppleLogin)
 		authentication.GET("/logout", controllers.Logout)
@@ -84,7 +86,26 @@ func setupRoutes(router *gin.Engine) {
 		users.GET("/@me", controllers.GetMe)
 		users.PUT("/@me", controllers.UpdateUser)
 	}
-	routes.RegisterEventRoutes(router)
+	{
+		events.POST("/", controllers.CreateEvent)
+		events.GET("/", controllers.FetchEvent)
+		events.PATCH("/", controllers.UpdateEvent)
+		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
+	}
+
+	{
+		groups.POST("/", controllers.CreateGroup)
+		groups.GET("/", controllers.FetchGroup)
+		groups.PATCH("/", controllers.UpdateGroup)
+		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
+	}
+
+	{
+		subscriptions.POST("/", controllers.CreateSubscription)
+		subscriptions.DELETE("/:calendar", controllers.DeleteSubscription)
+		subscriptions.GET("/", controllers.FetchSubscriptions)
+		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
+	}
 }
 
 func cleanup(server *http.Server) {

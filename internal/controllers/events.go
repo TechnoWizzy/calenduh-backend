@@ -1,8 +1,8 @@
-package handlers
+package controllers
 
 import (
-	"github.com/gin-gonic/gin"
 	"calenduh-backend/internal/database"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
@@ -12,11 +12,13 @@ func CreateEvent(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
 	event, err := database.CreateEvent(c, &options)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusOK, event)
 }
 
