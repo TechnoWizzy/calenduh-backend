@@ -155,6 +155,11 @@ func AppleLogin(c *gin.Context) {
 // GoogleLogin
 // @Summary Google Login
 func GoogleLogin(c *gin.Context) {
+	state := c.Param("state")
+	if state == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "missing state"})
+		return
+	}
 	localRedirectUri := c.Query("redirect_uri")
 	redirectUri := util.GetProtocol(c) + c.Request.Host + util.GetEnv("GOOGLE_OAUTH_URI")
 	redirectUrl := util.GetEnv("GOOGLE_OAUTH_URL")
@@ -163,7 +168,7 @@ func GoogleLogin(c *gin.Context) {
 	scope := "https://www.googleapis.com/auth/userinfo.email"
 	accessType := "offline"
 	prompt := "select_account"
-	state := util.CreateNonce(localRedirectUri)
+	state = util.CreateNonce(localRedirectUri)
 	params := fmt.Sprintf(
 		"?response_type=%s&client_id=%s&scope=%s&access_type=%s&prompt=%s&redirect_uri=%s&state=%s",
 		responseType,
@@ -308,7 +313,7 @@ func GoogleAuth(c *gin.Context) {
 	c.SetCookie("session_id", session.SessionId, tokenData.ExpiresIn, "/",
 		c.Request.Host, false, true)
 
-	log.Print(redirectUri)
+	log.Print(*redirectUri)
 	c.Redirect(http.StatusTemporaryRedirect, *redirectUri)
 }
 

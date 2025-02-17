@@ -29,10 +29,9 @@ func GetHash(value string) string {
 }
 
 // CreateNonce creates an ID and time-based nonce for login requests.
-func CreateNonce(redirectUri string) string {
-	nonce := GetHash(time.Now().String())
-	Nonces.Set(nonce, redirectUri, cache.DefaultExpiration)
-	return nonce
+func CreateNonce(state string, redirectUri string) string {
+	Nonces.Set(state, redirectUri, cache.DefaultExpiration)
+	return state
 }
 
 // ValidateNonce determines whether a provided nonce is valid for the login requests.
