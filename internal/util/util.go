@@ -29,23 +29,21 @@ func GetHash(value string) string {
 }
 
 // CreateNonce creates an ID and time-based nonce for login requests.
-func CreateNonce(clientId string) string {
-	nonce := GetHash(clientId + time.Now().String())
-	Nonces.Set(clientId, nonce, cache.DefaultExpiration)
+func CreateNonce(redirectUri string) string {
+	nonce := GetHash(time.Now().String())
+	Nonces.Set(nonce, redirectUri, cache.DefaultExpiration)
 	return nonce
 }
 
 // ValidateNonce determines whether a provided nonce is valid for the login requests.
-func ValidateNonce(ip string, nonce string) bool {
-	cachedNonce, found := Nonces.Get(ip)
+func ValidateNonce(code string) (bool, *string) {
+	v, found := Nonces.Get(code)
 	if !found {
-		return false
+		return false, nil
 	}
-	if cachedNonce != nonce {
-		return false
-	}
-	Nonces.Delete(ip)
-	return true
+	Nonces.Delete(code)
+	redirectUri := v.(string)
+	return true, &redirectUri
 }
 
 func GetClientId(c *gin.Context) string {

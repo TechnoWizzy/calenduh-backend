@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gin-gonic/gin v1.10.0
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/matoous/go-nanoid/v2 v2.1.0
@@ -50,8 +51,8 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	golang.org/x/arch v0.8.0 // indirect
-	golang.org/x/crypto v0.30.0 // indirect
-	golang.org/x/net v0.32.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect

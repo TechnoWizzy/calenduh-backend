@@ -10,11 +10,15 @@ import (
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
+	"github.com/go-resty/resty/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/mongo"
 	"io"
 	"math/big"
 	"net/http"
+	"net/url"
+	"strings"
+	"time"
 )
 
 type AppleLoginBody struct {
@@ -22,6 +26,26 @@ type AppleLoginBody struct {
 	IdentityToken     string  `json:"identityToken"`
 	UserId            string  `json:"user"`
 	Email             *string `json:"email,omitempty"`
+}
+
+// TokenData represents the structure of a successful OAuth2 flow.
+// AccessToken is used to make requests to its respective API to retrieve user information.
+// RefreshToken is used to obtain a new AccessToken once ExpiresIn seconds have elapsed.
+// Scope determines what information can be obtained from the API about the user.
+type TokenData struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+	Scope        string `json:"scope"`
+}
+
+// GoogleUser represents the structure returned by Google Persons API.
+type GoogleUser struct {
+	ID       string `json:"sub"`
+	Picture  string `json:"picture"`
+	Email    string `json:"email"`
+	Verified bool   `json:"email_verified"`
 }
 
 type AppleKeyResponse struct {
@@ -131,7 +155,160 @@ func AppleLogin(c *gin.Context) {
 // @Summary Google Login
 func GoogleLogin(c *gin.Context) {
 	spew.Dump(c.Request)
-	c.Status(http.StatusOK)
+	localRedirectUri := c.Query("redirect_uri")
+	redirectUri := util.GetProtocol(c) + c.Request.Host + util.GetEnv("GOOGLE_OAUTH_URI")
+	redirectUrl := util.GetEnv("GOOGLE_OAUTH_URL")
+	clientId := util.GetEnv("GOOGLE_CLIENT_ID")
+	responseType := "code"
+	scope := "https://www.googleapis.com/auth/userinfo.email"
+	accessType := "offline"
+	prompt := "select_account"
+	state := util.CreateNonce(localRedirectUri)
+	params := fmt.Sprintf(
+		"?response_type=%s&client_id=%s&scope=%s&access_type=%s&prompt=%s&redirect_uri=%s&state=%s",
+		responseType,
+		clientId,
+		url.QueryEscape(scope),
+		accessType,
+		prompt,
+		url.QueryEscape(redirectUri),
+		state)
+	c.Redirect(http.StatusTemporaryRedirect, redirectUrl+params)
+}
+
+// GoogleAuth
+// @Summary Google Auth
+func GoogleAuth(c *gin.Context) {
+	state := c.Query("state")
+	code := c.Query("code")
+	validated, redirectUri := util.ValidateNonce(state)
+	if !validated {
+		message := gin.H{"message": "invalid state"}
+		c.AbortWithStatusJSON(http.StatusBadRequest, message)
+		return
+	}
+
+	if code == "" {
+		message := gin.H{"message": "invalid code"}
+		c.AbortWithStatusJSON(http.StatusBadRequest, message)
+		return
+	}
+
+	client := resty.New()
+	googleTokenUrl := util.GetEnv("GOOGLE_OAUTH_TOKEN_URL")
+
+	resp, err := client.R().
+		SetFormData(map[string]string{
+			"client_id":     util.GetEnv("GOOGLE_CLIENT_ID"),
+			"client_secret": util.GetEnv("GOOGLE_CLIENT_SECRET"),
+			"redirect_uri":  util.GetProtocol(c) + c.Request.Host + util.GetEnv("GOOGLE_OAUTH_URI"),
+			"grant_type":    "authorization_code",
+			"code":          code,
+		}).
+		Post(googleTokenUrl)
+	if err != nil {
+		message := gin.H{
+			"message": "failed to acquire oauth token",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		message := gin.H{"message": "invalid code"}
+		c.AbortWithStatusJSON(http.StatusBadRequest, message)
+		return
+	}
+
+	var tokenData TokenData
+	err = json.Unmarshal(resp.Body(), &tokenData)
+	if err != nil {
+		message := gin.H{
+			"message": "unable to unmarshal tokenData body",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	googleApiUrl := util.GetEnv("GOOGLE_API_URL")
+
+	resp, err = client.R().
+		SetHeaders(map[string]string{
+			"Content-Type":  "application/json",
+			"Authorization": "Bearer " + tokenData.AccessToken,
+		}).
+		Get(googleApiUrl + "/oauth2/v3/userinfo")
+	if err != nil {
+		message := gin.H{
+			"message": "unable to retrieve user data",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		message := gin.H{
+			"message": "unable to retrieve user data",
+			"error":   resp.Body(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	var googleUser GoogleUser
+	err = json.Unmarshal(resp.Body(), &googleUser)
+	if err != nil {
+		message := gin.H{
+			"message": "unable to unmarshal googleUser body",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	user, err := database.FetchUserByEmail(c, googleUser.Email)
+	if err != nil { // User does not exist yet
+		username := strings.Split(googleUser.Email, "@")[0]
+
+		user, err = database.CreateUser(c, &database.CreateUserOptions{
+			Email:    googleUser.Email,
+			Username: username,
+		})
+
+		if err != nil {
+			message := gin.H{
+				"message": "unable to create new user",
+				"error":   err.Error(),
+			}
+			c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+			return
+		}
+	}
+
+	session, err := database.CreateSession(c, &database.CreateSessionOptions{
+		UserId:       user.UserId,
+		Type:         database.GoogleSession,
+		AccessToken:  tokenData.AccessToken,
+		RefreshToken: tokenData.RefreshToken,
+		ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
+	})
+
+	if err != nil {
+		message := gin.H{
+			"message": "unable to execute query: CreateSession",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	c.SetCookie("session_id", session.SessionId, tokenData.ExpiresIn, "/",
+		c.Request.Host, false, true)
+
+	c.Redirect(http.StatusTemporaryRedirect, *redirectUri)
 }
 
 // Logout
