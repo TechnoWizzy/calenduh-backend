@@ -83,8 +83,8 @@ func setupRoutes(router *gin.Engine) {
 		authentication.POST("/apple/login", controllers.AppleLogin)
 		authentication.GET("/google/login", controllers.GoogleLogin)
 		authentication.GET("/google", controllers.GoogleAuth)
-		authentication.GET("/discord/login")
-		authentication.GET("/discord")
+		authentication.GET("/discord/login", controllers.DiscordLogin)
+		authentication.GET("/discord", controllers.DiscordAuth)
 		authentication.GET("/logout", controllers.Logout)
 	}
 	{

@@ -327,8 +327,37 @@ func GoogleAuth(c *gin.Context) {
 	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionId)
 }
 
-// GoogleAuth
-// @Summary Google Auth
+// DiscordLogin
+// @Summary Discord Login
+func DiscordLogin(c *gin.Context) {
+	state := c.Query("state")
+	if state == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "missing state"})
+		return
+	}
+	localRedirectUri := c.Query("redirect_uri")
+	redirectUri := util.GetProtocol(c) + c.Request.Host + util.GetEnv("GOOGLE_OAUTH_URI")
+	redirectUrl := util.GetEnv("GOOGLE_OAUTH_URL")
+	clientId := util.GetEnv("GOOGLE_CLIENT_ID")
+	responseType := "code"
+	scope := "identify email"
+	accessType := "offline"
+	prompt := "none"
+	state = util.CreateNonce(state, localRedirectUri)
+	params := fmt.Sprintf(
+		"?response_type=%s&client_id=%s&scope=%s&access_type=%s&prompt=%s&redirect_uri=%s&state=%s",
+		responseType,
+		clientId,
+		url.QueryEscape(scope),
+		accessType,
+		prompt,
+		url.QueryEscape(redirectUri),
+		state)
+	c.Redirect(http.StatusTemporaryRedirect, redirectUrl+params)
+}
+
+// DiscordAuth
+// @Summary Discord Auth
 func DiscordAuth(c *gin.Context) {
 	state := c.Query("state")
 	code := c.Query("code")
