@@ -155,7 +155,7 @@ func AppleLogin(c *gin.Context) {
 // GoogleLogin
 // @Summary Google Login
 func GoogleLogin(c *gin.Context) {
-	state := c.Param("state")
+	state := c.Query("state")
 	if state == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "missing state"})
 		return
