@@ -65,7 +65,7 @@ type AppleKey struct {
 // Authorize is middleware that checks the login status of the current request.
 // If a user is on an active session their ID is attached to the request under user_id.
 func Authorize(c *gin.Context) {
-	sessionId, err := c.Cookie("session_id")
+	sessionId, err := c.Cookie("sessionId")
 	if err != nil { // No session
 		c.Next()
 		return
@@ -309,11 +309,11 @@ func GoogleAuth(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("session_id", session.SessionId, tokenData.ExpiresIn, "/",
+	c.SetCookie("sessionId", session.SessionId, tokenData.ExpiresIn, "/",
 		c.Request.Host, false, true)
 
 	log.Print(*redirectUri)
-	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&session_id="+session.SessionId)
+	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionId)
 }
 
 // Logout
