@@ -168,7 +168,7 @@ func GoogleLogin(c *gin.Context) {
 	scope := "https://www.googleapis.com/auth/userinfo.email"
 	accessType := "offline"
 	prompt := "select_account"
-	state = util.CreateNonce(localRedirectUri)
+	state = util.CreateNonce(state, localRedirectUri)
 	params := fmt.Sprintf(
 		"?response_type=%s&client_id=%s&scope=%s&access_type=%s&prompt=%s&redirect_uri=%s&state=%s",
 		responseType,
