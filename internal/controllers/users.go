@@ -7,13 +7,6 @@ import (
 	"net/http"
 )
 
-type UserResponse struct {
-	Id       string `json:"id"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Role     string `json:"role"`
-}
-
 // GetMe
 // @Summary Get details of the current user
 // @Description Fetches the user data for the currently authenticated user.
@@ -24,8 +17,7 @@ func GetMe(c *gin.Context) {
 		return
 	}
 
-	response := *MakeUserResponse(user)
-	c.PureJSON(http.StatusOK, response)
+	c.PureJSON(http.StatusOK, user)
 	return
 }
 
@@ -57,8 +49,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	response := *MakeUserResponse(user)
-	c.PureJSON(http.StatusOK, response)
+	c.PureJSON(http.StatusOK, user)
 }
 
 func ParseUser(c *gin.Context) (*database.User, error) {
@@ -69,18 +60,6 @@ func ParseUser(c *gin.Context) (*database.User, error) {
 
 	user := v.(database.User)
 	return &user, nil
-}
-
-func MakeUserResponse(user *database.User) *UserResponse {
-	if user == nil {
-		return nil
-	}
-
-	return &UserResponse{
-		Id:       user.UserId,
-		Email:    user.Email,
-		Username: user.Username,
-	}
 }
 
 func ValidateUpdateUserOptions(options *database.UpdateUserOptions) error {

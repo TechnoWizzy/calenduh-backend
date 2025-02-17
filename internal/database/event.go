@@ -8,8 +8,8 @@ import (
 )
 
 type Event struct {
-	EventId      string `json:"event_id" bson:"_id"`
-	CalendarId   string `json:"calendar_id" bson:"calendar_id"`
+	EventId      string `json:"eventId" bson:"_id"`
+	CalendarId   string `json:"calendarId" bson:"calendar_id"`
 	Name         string `json:"name" bson:"name"`
 	Start        int64  `json:"start" bson:"start"` // Start date and time
 	End          int64  `json:"end" bson:"end"`     // End date and time
@@ -21,7 +21,7 @@ type Event struct {
 }
 
 type CreateEventOptions struct {
-	CalendarId   string `json:"calendar_id" bson:"calendar_id"`
+	CalendarId   string `json:"calendarId" bson:"calendar_id"`
 	Name         string `json:"name" bson:"name"`
 	Start        int64  `json:"start" bson:"start"`
 	End          int64  `json:"end" bson:"end"`

@@ -6,9 +6,9 @@ import (
 )
 
 type GroupMember struct {
-	GroupMemberId string `json:"group_member_id" bson:"_id"`
-	UserId        string `json:"user_id" bson:"user_id"`
-	GroupId       string `json:"group_id" bson:"group_id"`
+	GroupMemberId string `json:"groupMemberId" bson:"_id"`
+	UserId        string `json:"userId" bson:"user_id"`
+	GroupId       string `json:"groupId" bson:"group_id"`
 }
 
 type CreateGroupMemberOptions struct {
@@ -33,7 +33,7 @@ func CreateGroupMember(c *gin.Context, options *CreateGroupMemberOptions) (*Grou
 
 func FetchGroupMemberByUserId(c *gin.Context, id string) (*GroupMember, error) {
 	var user GroupMember
-	filter := bson.D{{"user_id", id}}
+	filter := bson.D{{"userId", id}}
 	result := GroupMembers.FindOne(c, filter)
 	if err := result.Decode(&user); err != nil {
 		return nil, err

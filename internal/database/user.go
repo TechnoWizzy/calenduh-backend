@@ -7,20 +7,20 @@ import (
 )
 
 type User struct {
-	UserId   string `json:"user_id" bson:"_id"`
+	UserId   string `json:"userId" bson:"_id"`
 	Email    string `json:"email" bson:"email"`
 	Username string `json:"username" bson:"username"`
 }
 
 type CreateUserOptions struct {
-	Id       *string
-	Email    string
-	Username string
+	Id       *string `json:"userId"`
+	Email    string  `json:"email"`
+	Username string  `json:"username"`
 }
 
 type UpdateUserOptions struct {
-	Email    string
-	Username string
+	Email    string `json:"email"`
+	Username string `json:"username"`
 }
 
 func CreateUser(c *gin.Context, options *CreateUserOptions) (*User, error) {

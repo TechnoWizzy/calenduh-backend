@@ -7,11 +7,11 @@ import (
 )
 
 type Calendar struct {
-	CalendarId string `json:"calendar_id" bson:"_id"`
+	CalendarId string `json:"calendarId" bson:"_id"`
 	Type       string `json:"type" bson:"type"`
 	Title      string `json:"title" bson:"title"`
-	OwnerId    string `json:"owner_id" bson:"owner_id"`
-	IsPublic   bool   `json:"is_public" bson:"is_public"`
+	OwnerId    string `json:"ownerId" bson:"owner_id"`
+	IsPublic   bool   `json:"isPublic" bson:"is_public"`
 }
 
 type CreateCalendarOptions struct {

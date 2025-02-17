@@ -7,14 +7,14 @@ import (
 )
 
 type Subscription struct {
-	SubscriptionId string `json:"subscription_id" bson:"_id"`
-	SubscriberId   string `json:"subscriber_id" bson:"subscriber_id"`
-	CalendarId     string `json:"calendar_id" bson:"calendar_id"`
+	SubscriptionId string `json:"subscriptionId" bson:"_id"`
+	SubscriberId   string `json:"subscriberId" bson:"subscriber_id"`
+	CalendarId     string `json:"calendarId" bson:"calendar_id"`
 }
 
 type SubscribeOptions struct {
-	SubscriberId string `json:"subscriber_id"`
-	CalendarId   string `json:"calendar_id"`
+	SubscriberId string `json:"subscriberId"`
+	CalendarId   string `json:"calendarId"`
 }
 
 type UnsubscribeOptions struct {

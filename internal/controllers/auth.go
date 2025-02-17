@@ -146,8 +146,7 @@ func AppleLogin(c *gin.Context) {
 	}
 
 	c.PureJSON(http.StatusOK, gin.H{
-		"session": session,
-		"user":    user,
+		"sessionId": session.SessionId,
 	})
 	return
 }

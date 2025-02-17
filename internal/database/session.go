@@ -8,12 +8,12 @@ import (
 )
 
 type Session struct {
-	SessionId    string `json:"session_id" bson:"_id"`
-	UserId       string `json:"user_id" bson:"user_id"`
+	SessionId    string `json:"sessionId" bson:"_id"`
+	UserId       string `json:"userId" bson:"user_id"`
 	Type         string `json:"type" bson:"type"`
-	AccessToken  string `json:"access_token" bson:"access_token"`
-	RefreshToken string `json:"refresh_token" bson:"refresh_token"`
-	ExpiresOn    int64  `json:"expires_on" bson:"expires_on"`
+	AccessToken  string `json:"accessToken" bson:"access_token"`
+	RefreshToken string `json:"refreshToken" bson:"refresh_token"`
+	ExpiresOn    int64  `json:"expiresOn" bson:"expires_on"`
 }
 
 type CreateSessionOptions struct {
