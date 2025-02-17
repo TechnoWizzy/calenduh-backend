@@ -29,6 +29,19 @@ type AppleLoginBody struct {
 	Email             *string `json:"email,omitempty"`
 }
 
+type AppleKeyResponse struct {
+	Keys []AppleKey `json:"keys"`
+}
+
+type AppleKey struct {
+	Kty string `json:"kty"`
+	Kid string `json:"kid"`
+	Use string `json:"use"`
+	Alg string `json:"alg"`
+	N   string `json:"n"`
+	E   string `json:"e"`
+}
+
 // TokenData represents the structure of a successful OAuth2 flow.
 // AccessToken is used to make requests to its respective API to retrieve user information.
 // RefreshToken is used to obtain a new AccessToken once ExpiresIn seconds have elapsed.
@@ -49,17 +62,15 @@ type GoogleUser struct {
 	Verified bool   `json:"email_verified"`
 }
 
-type AppleKeyResponse struct {
-	Keys []AppleKey `json:"keys"`
-}
-
-type AppleKey struct {
-	Kty string `json:"kty"`
-	Kid string `json:"kid"`
-	Use string `json:"use"`
-	Alg string `json:"alg"`
-	N   string `json:"n"`
-	E   string `json:"e"`
+// DiscordUser represents the structure return by the Discord User API.
+type DiscordUser struct {
+	ID            string `json:"id"`
+	Username      string `json:"username"`
+	Discriminator string `json:"discriminator"`
+	GlobalName    string `json:"global_name"`
+	Avatar        string `json:"avatar"`
+	Email         string `json:"email"`
+	Verified      bool   `json:"verified"`
 }
 
 // Authorize is middleware that checks the login status of the current request.
@@ -295,6 +306,141 @@ func GoogleAuth(c *gin.Context) {
 	session, err := database.CreateSession(c, &database.CreateSessionOptions{
 		UserId:       user.UserId,
 		Type:         database.GoogleSession,
+		AccessToken:  tokenData.AccessToken,
+		RefreshToken: tokenData.RefreshToken,
+		ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
+	})
+
+	if err != nil {
+		message := gin.H{
+			"message": "unable to execute query: CreateSession",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	c.SetCookie("sessionId", session.SessionId, tokenData.ExpiresIn, "/",
+		c.Request.Host, false, true)
+
+	log.Print(*redirectUri)
+	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionId)
+}
+
+// GoogleAuth
+// @Summary Google Auth
+func DiscordAuth(c *gin.Context) {
+	state := c.Query("state")
+	code := c.Query("code")
+	validated, redirectUri := util.ValidateNonce(state)
+	if !validated {
+		message := gin.H{"message": "invalid state"}
+		c.AbortWithStatusJSON(http.StatusBadRequest, message)
+		return
+	}
+
+	if code == "" {
+		message := gin.H{"message": "invalid code"}
+		c.AbortWithStatusJSON(http.StatusBadRequest, message)
+		return
+	}
+
+	client := resty.New()
+	discordTokenUrl := util.GetEnv("DISCORD_OAUTH_TOKEN_URL")
+
+	resp, err := client.R().
+		SetFormData(map[string]string{
+			"client_id":     util.GetEnv("DISCORD_CLIENT_ID"),
+			"client_secret": util.GetEnv("DISCORD_CLIENT_SECRET"),
+			"redirect_uri":  util.GetProtocol(c) + c.Request.Host + util.GetEnv("DISCORD_OAUTH_URI"),
+			"grant_type":    "authorization_code",
+			"code":          code,
+		}).
+		Post(discordTokenUrl)
+	if err != nil {
+		message := gin.H{
+			"message": "failed to acquire oauth token",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		message := gin.H{"message": "invalid code"}
+		c.AbortWithStatusJSON(http.StatusBadRequest, message)
+		return
+	}
+
+	var tokenData TokenData
+	err = json.Unmarshal(resp.Body(), &tokenData)
+	if err != nil {
+		message := gin.H{
+			"message": "unable to unmarshal tokenData body",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	discordApiUrl := util.GetEnv("DISCORD_API_URL")
+
+	resp, err = client.R().
+		SetHeaders(map[string]string{
+			"Content-Type":  "application/json",
+			"Authorization": "Bearer " + tokenData.AccessToken,
+		}).
+		Get(discordApiUrl + "/users/@me")
+	if err != nil {
+		message := gin.H{
+			"message": "unable to retrieve user data",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		message := gin.H{
+			"message": "unable to retrieve user data",
+			"error":   resp.Body(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	var discordUser DiscordUser
+	err = json.Unmarshal(resp.Body(), &discordUser)
+	if err != nil {
+		message := gin.H{
+			"message": "unable to unmarshal googleUser body",
+			"error":   err.Error(),
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	user, err := database.FetchUserByEmail(c, discordUser.Email)
+	if err != nil { // User does not exist yet
+
+		user, err = database.CreateUser(c, &database.CreateUserOptions{
+			Email:    discordUser.Email,
+			Username: discordUser.Username,
+		})
+
+		if err != nil {
+			message := gin.H{
+				"message": "unable to create new user",
+				"error":   err.Error(),
+			}
+			c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+			return
+		}
+	}
+
+	session, err := database.CreateSession(c, &database.CreateSessionOptions{
+		UserId:       user.UserId,
+		Type:         database.DiscordSession,
 		AccessToken:  tokenData.AccessToken,
 		RefreshToken: tokenData.RefreshToken,
 		ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),

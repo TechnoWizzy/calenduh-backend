@@ -25,8 +25,9 @@ type CreateSessionOptions struct {
 }
 
 const (
-	AppleSession  = "APPLE"
-	GoogleSession = "GOOGLE"
+	AppleSession   = "APPLE"
+	GoogleSession  = "GOOGLE"
+	DiscordSession = "DISCORD"
 )
 
 func CreateSession(c *gin.Context, options *CreateSessionOptions) (*Session, error) {
