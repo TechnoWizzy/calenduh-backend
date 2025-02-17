@@ -336,9 +336,9 @@ func DiscordLogin(c *gin.Context) {
 		return
 	}
 	localRedirectUri := c.Query("redirect_uri")
-	redirectUri := util.GetProtocol(c) + c.Request.Host + util.GetEnv("GOOGLE_OAUTH_URI")
-	redirectUrl := util.GetEnv("GOOGLE_OAUTH_URL")
-	clientId := util.GetEnv("GOOGLE_CLIENT_ID")
+	redirectUri := util.GetProtocol(c) + c.Request.Host + util.GetEnv("DISCORD_OAUTH_URI")
+	redirectUrl := util.GetEnv("DISCORD_OAUTH_URL")
+	clientId := util.GetEnv("DISCORD_CLIENT_ID")
 	responseType := "code"
 	scope := "identify email"
 	accessType := "offline"
