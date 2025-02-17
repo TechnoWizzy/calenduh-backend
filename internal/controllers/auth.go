@@ -14,6 +14,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/mongo"
 	"io"
+	"log"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -154,7 +155,6 @@ func AppleLogin(c *gin.Context) {
 // GoogleLogin
 // @Summary Google Login
 func GoogleLogin(c *gin.Context) {
-	spew.Dump(c.Request)
 	localRedirectUri := c.Query("redirect_uri")
 	redirectUri := util.GetProtocol(c) + c.Request.Host + util.GetEnv("GOOGLE_OAUTH_URI")
 	redirectUrl := util.GetEnv("GOOGLE_OAUTH_URL")
@@ -308,6 +308,7 @@ func GoogleAuth(c *gin.Context) {
 	c.SetCookie("session_id", session.SessionId, tokenData.ExpiresIn, "/",
 		c.Request.Host, false, true)
 
+	log.Print(redirectUri)
 	c.Redirect(http.StatusTemporaryRedirect, *redirectUri)
 }
 

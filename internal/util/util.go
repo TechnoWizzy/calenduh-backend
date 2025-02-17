@@ -70,7 +70,7 @@ func GetHostAddress(c *gin.Context) string {
 }
 
 func GetProtocol(c *gin.Context) string {
-	protocol := c.GetHeader("X-Protocol")
+	protocol := c.GetHeader("X-Forwarded-Proto")
 	if protocol == "" {
 		return "http://"
 	} else {
