@@ -51,7 +51,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	user, err = database.UpdateUser(c, user.Id, &options)
+	user, err = database.UpdateUser(c, user.UserId, &options)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
 		return
@@ -77,7 +77,7 @@ func MakeUserResponse(user *database.User) *UserResponse {
 	}
 
 	return &UserResponse{
-		Id:       user.Id,
+		Id:       user.UserId,
 		Email:    user.Email,
 		Username: user.Username,
 	}

@@ -111,7 +111,7 @@ func AppleLogin(c *gin.Context) {
 	}
 
 	session, err := database.CreateSession(c, &database.CreateSessionOptions{
-		UserId: user.Id,
+		UserId: user.UserId,
 		Type:   database.AppleSession,
 	})
 
@@ -125,6 +125,13 @@ func AppleLogin(c *gin.Context) {
 		"user":    user,
 	})
 	return
+}
+
+// GoogleLogin
+// @Summary Google Login
+func GoogleLogin(c *gin.Context) {
+	spew.Dump(c.Request)
+	c.Status(http.StatusOK)
 }
 
 // Logout

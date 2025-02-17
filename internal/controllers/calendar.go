@@ -1,5 +1,7 @@
 package controllers
 
-func a() {
+import "github.com/gin-gonic/gin"
+
+func FetchCalendar(c *gin.Context) {
 
 }

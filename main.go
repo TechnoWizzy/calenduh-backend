@@ -77,9 +77,14 @@ func setupRoutes(router *gin.Engine) {
 	users := router.Group("/users")
 	events := router.Group("/event")
 	groups := router.Group("/groups")
+	calendars := router.Group("/calendars")
 	subscriptions := router.Group("/subscriptions")
 	{
 		authentication.POST("/apple/login", controllers.AppleLogin)
+		authentication.GET("/google/login", controllers.GoogleLogin)
+		authentication.GET("/google")
+		authentication.GET("/discord/login")
+		authentication.GET("/discord")
 		authentication.GET("/logout", controllers.Logout)
 	}
 	{
@@ -88,21 +93,22 @@ func setupRoutes(router *gin.Engine) {
 	}
 	{
 		events.POST("/", controllers.CreateEvent)
-		events.GET("/", controllers.FetchEvent)
+		events.GET("/event_id", controllers.FetchEvent)
 		events.PATCH("/", controllers.UpdateEvent)
 		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
 	}
-
 	{
 		groups.POST("/", controllers.CreateGroup)
 		groups.GET("/", controllers.FetchGroup)
 		groups.PATCH("/", controllers.UpdateGroup)
 		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
 	}
-
+	{
+		calendars.GET("/:calendar_id", controllers.FetchCalendar)
+	}
 	{
 		subscriptions.POST("/", controllers.CreateSubscription)
-		subscriptions.DELETE("/:calendar", controllers.DeleteSubscription)
+		subscriptions.DELETE("/:calendar_id", controllers.DeleteSubscription)
 		subscriptions.GET("/", controllers.FetchSubscriptions)
 		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
 	}

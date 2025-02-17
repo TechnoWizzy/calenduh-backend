@@ -8,7 +8,7 @@ import (
 )
 
 type Session struct {
-	Id           string `json:"id" bson:"_id"`
+	SessionId    string `json:"session_id" bson:"_id"`
 	UserId       string `json:"user_id" bson:"user_id"`
 	Type         string `json:"type" bson:"type"`
 	AccessToken  string `json:"access_token" bson:"access_token"`
@@ -30,7 +30,7 @@ const (
 
 func CreateSession(c *gin.Context, options *CreateSessionOptions) (*Session, error) {
 	session := Session{
-		Id:           gonanoid.Must(),
+		SessionId:    gonanoid.Must(),
 		UserId:       options.UserId,
 		Type:         options.Type,
 		AccessToken:  options.AccessToken,

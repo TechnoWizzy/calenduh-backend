@@ -7,9 +7,9 @@ import (
 )
 
 type Subscription struct {
-	Id           string `json:"id" bson:"_id"`
-	SubscriberId string `json:"subscriber_id" bson:"subscriber_id"`
-	CalendarId   string `json:"calendar_id" bson:"calendar_id"`
+	SubscriptionId string `json:"subscription_id" bson:"_id"`
+	SubscriberId   string `json:"subscriber_id" bson:"subscriber_id"`
+	CalendarId     string `json:"calendar_id" bson:"calendar_id"`
 }
 
 type SubscribeOptions struct {
@@ -24,9 +24,9 @@ type UnsubscribeOptions struct {
 
 func CreateSubscription(c *gin.Context, options *SubscribeOptions) (*Subscription, error) {
 	sub := Subscription{
-		Id:           options.SubscriberId + options.CalendarId,
-		SubscriberId: options.SubscriberId,
-		CalendarId:   options.CalendarId,
+		SubscriptionId: options.SubscriberId + options.CalendarId,
+		SubscriberId:   options.SubscriberId,
+		CalendarId:     options.CalendarId,
 	}
 
 	_, err := Subscriptions.InsertOne(c, sub)

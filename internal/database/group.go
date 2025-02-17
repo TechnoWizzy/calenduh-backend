@@ -7,8 +7,8 @@ import (
 )
 
 type Group struct {
-	Id   string `json:"id" bson:"_id"`
-	Name string `json:"name" bson:"name"`
+	GroupId string `json:"group_id" bson:"_id"`
+	Name    string `json:"name" bson:"name"`
 }
 
 type CreateGroupOptions struct {
@@ -21,8 +21,8 @@ type UpdateGroupOptions struct {
 
 func CreateGroup(c *gin.Context, options *CreateGroupOptions) (*Group, error) {
 	group := Group{
-		Id:   gonanoid.Must(),
-		Name: options.Name,
+		GroupId: gonanoid.Must(),
+		Name:    options.Name,
 	}
 
 	_, err := Groups.InsertOne(c, group)

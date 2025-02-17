@@ -8,15 +8,15 @@ import (
 )
 
 type Event struct {
-	Id           string `json:"id" bson:"_id"`
+	EventId      string `json:"event_id" bson:"_id"`
 	CalendarId   string `json:"calendar_id" bson:"calendar_id"`
 	Name         string `json:"name" bson:"name"`
 	Start        int64  `json:"start" bson:"start"` // Start date and time
 	End          int64  `json:"end" bson:"end"`     // End date and time
 	Location     string `json:"location" bson:"location"`
 	Description  string `json:"description" bson:"description"`
-	Notification string `json:"notification" bson:"notification"` // (contains time offset in milliseconds)
-	Frequency    string `json:"frequency" bson:"frequency"`
+	Notification string `json:"notification" bson:"notification"`
+	Frequency    string `json:"frequency" bson:"frequency"` // (contains time offset in milliseconds)
 	Priority     int    `json:"priority" bson:"priority"`
 }
 
@@ -45,7 +45,7 @@ type UpdateEventOptions struct {
 
 func CreateEvent(c *gin.Context, options *CreateEventOptions) (*Event, error) {
 	event := Event{
-		Id:           gonanoid.Must(),
+		EventId:      gonanoid.Must(),
 		CalendarId:   options.CalendarId,
 		Name:         options.Name,
 		Start:        options.Start,
@@ -65,9 +65,9 @@ func CreateEvent(c *gin.Context, options *CreateEventOptions) (*Event, error) {
 	return &event, nil
 }
 
-func FetchEventById(c *gin.Context, id string) (*Event, error) {
+func FetchEventById(c *gin.Context, eventId string) (*Event, error) {
 	var event Event
-	filter := bson.D{{"_id", id}}
+	filter := bson.D{{"_id", eventId}}
 	result := Events.FindOne(c, filter)
 	if err := result.Decode(&event); err != nil {
 		return nil, err
@@ -75,9 +75,9 @@ func FetchEventById(c *gin.Context, id string) (*Event, error) {
 	return &event, nil
 }
 
-func FetchAllEvents(c *gin.Context) (*[]Event, error) {
+func FetchEventsByCalendarId(c *gin.Context, calendarId string) (*[]Event, error) {
 	var events []Event
-	filter := bson.D{}
+	filter := bson.D{{"calendar_id", calendarId}}
 	cursor, err := Events.Find(c, filter)
 	if err != nil {
 		return nil, err
@@ -90,60 +90,34 @@ func FetchAllEvents(c *gin.Context) (*[]Event, error) {
 }
 
 func UpdateEvent(c *gin.Context, id string, options *UpdateEventOptions) (*Event, error) {
-	update := bson.D{}
-	if options.Name != "" {
-		update = append(update, bson.E{"name", options.Name})
-	}
-	if options.Start != 0 {
-		update = append(update, bson.E{"start", options.Start})
-	}
-	if options.End != 0 {
-		update = append(update, bson.E{"end", options.End})
-	}
-	if options.Location != "" {
-		update = append(update, bson.E{"location", options.Location})
-	}
-	if options.Description != "" {
-		update = append(update, bson.E{"description", options.Description})
-	}
-	if options.Notification != "" {
-		update = append(update, bson.E{"notification", options.Notification})
-	}
-	if options.Frequency != "" {
-		update = append(update, bson.E{"frequency", options.Frequency})
-	}
-	if options.Priority != 0 {
-		update = append(update, bson.E{"priority", options.Priority})
-	}
-
-	// no fields = do not update anything
-	if len(update) == 0 {
-		return nil, errors.New("no updates were provided")
+	update := bson.D{
+		bson.E{"name", options.Name},
+		bson.E{"start", options.Start},
+		bson.E{"end", options.End},
+		bson.E{"location", options.Location},
+		bson.E{"description", options.Description},
+		bson.E{"notification", options.Notification},
+		bson.E{"frequency", options.Frequency},
+		bson.E{"priority", options.Priority},
 	}
 
 	opts := bson.D{{"$set", update}}
 
-	_, err := Events.UpdateByID(c, id, opts)
+	updateResult, err := Events.UpdateByID(c, id, opts)
 	if err != nil {
 		return nil, err
 	}
 
+	if updateResult.MatchedCount != 1 {
+		return nil, errors.New("event not found")
+	}
+
 	var event Event
 	filter := bson.D{{"_id", id}}
-	result := Events.FindOne(c, filter)
-	if err = result.Decode(&event); err != nil {
+	findResult := Events.FindOne(c, filter)
+	if err = findResult.Decode(&event); err != nil {
 		return nil, err
 	}
 
-	return &event, nil
-}
-
-func FetchEventNameById(c *gin.Context, id string) (*Event, error) {
-	var event Event
-	filter := bson.D{{"_id", id}}
-	result := Events.FindOne(c, filter)
-	if err := result.Decode(&event); err != nil {
-		return nil, err
-	}
 	return &event, nil
 }

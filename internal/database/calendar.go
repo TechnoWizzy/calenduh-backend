@@ -7,11 +7,11 @@ import (
 )
 
 type Calendar struct {
-	Id       string `json:"id" bson:"_id"`
-	Type     string `json:"type" bson:"type"`
-	Title    string `json:"title" bson:"title"`
-	OwnerId  string `json:"owner_id" bson:"owner_id"`
-	IsPublic bool   `json:"is_public" bson:"is_public"`
+	CalendarId string `json:"calendar_id" bson:"_id"`
+	Type       string `json:"type" bson:"type"`
+	Title      string `json:"title" bson:"title"`
+	OwnerId    string `json:"owner_id" bson:"owner_id"`
+	IsPublic   bool   `json:"is_public" bson:"is_public"`
 }
 
 type CreateCalendarOptions struct {
@@ -33,11 +33,11 @@ const (
 
 func CreateCalendar(c *gin.Context, options *CreateCalendarOptions) (*Calendar, error) {
 	calendar := Calendar{
-		Id:       gonanoid.Must(),
-		Type:     options.Type,
-		Title:    options.Title,
-		OwnerId:  options.OwnerId,
-		IsPublic: false,
+		CalendarId: gonanoid.Must(),
+		Type:       options.Type,
+		Title:      options.Title,
+		OwnerId:    options.OwnerId,
+		IsPublic:   false,
 	}
 
 	_, err := Calendars.InsertOne(c, calendar)
@@ -48,44 +48,44 @@ func CreateCalendar(c *gin.Context, options *CreateCalendarOptions) (*Calendar, 
 	return &calendar, nil
 }
 
-func FetchCalendarById(c *gin.Context, id string) (*Calendar, error) {
-	var user Calendar
-	filter := bson.D{{"_id", id}}
+func FetchCalendarById(c *gin.Context, calendarId string) (*Calendar, error) {
+	var calendar Calendar
+	filter := bson.D{{"_id", calendarId}}
 	result := Calendars.FindOne(c, filter)
-	if err := result.Decode(&user); err != nil {
+	if err := result.Decode(&calendar); err != nil {
 		return nil, err
 	}
 
-	return &user, nil
+	return &calendar, nil
 }
 
-func FetchAllCalendars(c *gin.Context) (*[]Calendar, error) {
-	var users []Calendar
-	filter := bson.D{}
+func FetchCalendarsByOwnerId(c *gin.Context, ownerId string) (*[]Calendar, error) {
+	var calendars []Calendar
+	filter := bson.D{{"owner_id", ownerId}}
 	cursor, err := Calendars.Find(c, filter)
 	if err != nil {
 		return nil, err
 	}
-	if err = cursor.All(c, &users); err != nil {
+	if err = cursor.All(c, &calendars); err != nil {
 		return nil, err
 	}
 
-	return &users, nil
+	return &calendars, nil
 }
 
-func UpdateCalendar(c *gin.Context, id string, options *UpdateCalendarOptions) (*Calendar, error) {
+func UpdateCalendar(c *gin.Context, calendarId string, options *UpdateCalendarOptions) (*Calendar, error) {
 	opts := bson.D{{"$set", bson.A{
 		bson.D{{"title", options.Title}},
 		bson.D{{"is_public", options.IsPublic}},
 	}}}
 
-	_, err := Calendars.UpdateByID(c, id, opts)
+	_, err := Calendars.UpdateByID(c, calendarId, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	var user Calendar
-	filter := bson.D{{"_id", id}}
+	filter := bson.D{{"_id", calendarId}}
 	result := Calendars.FindOne(c, filter)
 	if err = result.Decode(&user); err != nil {
 		return nil, err

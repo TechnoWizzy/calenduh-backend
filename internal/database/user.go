@@ -7,7 +7,7 @@ import (
 )
 
 type User struct {
-	Id       string `json:"id" bson:"_id"`
+	UserId   string `json:"user_id" bson:"_id"`
 	Email    string `json:"email" bson:"email"`
 	Username string `json:"username" bson:"username"`
 }
@@ -31,7 +31,7 @@ func CreateUser(c *gin.Context, options *CreateUserOptions) (*User, error) {
 		id = gonanoid.Must()
 	}
 	user := User{
-		Id:       id,
+		UserId:   id,
 		Email:    options.Email,
 		Username: options.Username,
 	}

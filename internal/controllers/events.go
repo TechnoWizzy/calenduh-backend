@@ -23,8 +23,8 @@ func CreateEvent(c *gin.Context) {
 }
 
 func FetchEvent(c *gin.Context) {
-	id := c.Query("id")
-	event, err := database.FetchEventById(c, id)
+	eventId := c.Query("event_id")
+	event, err := database.FetchEventById(c, eventId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Failed to fetch event"})
 		return
@@ -32,18 +32,9 @@ func FetchEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, event)
 }
 
-func FetchEventName(c *gin.Context) {
-	id := c.Query("id")
-	event, err := database.FetchEventNameById(c, id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Failed to fetch event name"})
-		return
-	}
-	c.JSON(http.StatusOK, event)
-}
-
-func FetchAllEvents(c *gin.Context) {
-	events, err := database.FetchAllEvents(c)
+func FetchCalendarEvents(c *gin.Context) {
+	calendarId := c.Query("calendar_id")
+	events, err := database.FetchEventsByCalendarId(c, calendarId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Failed to fetch all events"})
 		return

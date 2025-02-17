@@ -25,14 +25,15 @@ func New() *mongo.Client {
 
 	for {
 		iterations += 1
+
+		if iterations > 30 {
+			log.Fatal("Unable to connect to MongoDB after 30 seconds")
+		}
+
 		client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(MakeConnectionUri()))
 		if err != nil {
 			time.Sleep(time.Second)
 			continue
-		}
-
-		if iterations > 30 {
-			log.Fatal("Unable to connect to MongoDB after 30 seconds")
 		}
 
 		break

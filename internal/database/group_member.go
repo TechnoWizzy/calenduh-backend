@@ -6,9 +6,9 @@ import (
 )
 
 type GroupMember struct {
-	Id	    string `json:"id" bson:"_id"`
-	UserId  string `json:"user_id" bson:"user_id"`
-	GroupId string `json:"group_id" bson:"group_id"`
+	GroupMemberId string `json:"group_member_id" bson:"_id"`
+	UserId        string `json:"user_id" bson:"user_id"`
+	GroupId       string `json:"group_id" bson:"group_id"`
 }
 
 type CreateGroupMemberOptions struct {
@@ -18,9 +18,9 @@ type CreateGroupMemberOptions struct {
 
 func CreateGroupMember(c *gin.Context, options *CreateGroupMemberOptions) (*GroupMember, error) {
 	group := GroupMember{
-		Id:      options.UserId + "_" + options.GroupId,
-		UserId:  options.UserId,
-		GroupId: options.GroupId,
+		GroupMemberId: options.UserId + "_" + options.GroupId,
+		UserId:        options.UserId,
+		GroupId:       options.GroupId,
 	}
 
 	_, err := GroupMembers.InsertOne(c, group)

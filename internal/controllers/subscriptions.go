@@ -30,13 +30,13 @@ func DeleteSubscription(c *gin.Context) {
 	}
 
 	user := v.(*database.User)
-	calendarId := c.Param("calendar")
+	calendarId := c.Param("calendar_id")
 	if calendarId == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "calendar id required"})
 		return
 	}
 
-	err := database.DeleteSubscription(c, user.Id, calendarId)
+	err := database.DeleteSubscription(c, user.UserId, calendarId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -53,7 +53,7 @@ func FetchSubscriptions(c *gin.Context) {
 	}
 
 	user := v.(*database.User)
-	subscriptions, err := database.FetchAllSubscriptions(c, user.Id)
+	subscriptions, err := database.FetchAllSubscriptions(c, user.UserId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Failed to fetch subscribed calendars"})
 		return
