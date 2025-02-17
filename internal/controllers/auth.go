@@ -314,7 +314,7 @@ func GoogleAuth(c *gin.Context) {
 		c.Request.Host, false, true)
 
 	log.Print(*redirectUri)
-	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"state="+state)
+	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"state="+state+"&session_id="+session.SessionId)
 }
 
 // Logout
