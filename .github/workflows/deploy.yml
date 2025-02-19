@@ -39,6 +39,7 @@ jobs:
         run: |
           cp .env /home/kaden/calenduh/${{ github.ref_name }}
           cp docker-compose.yml /home/kaden/calenduh/${{ github.ref_name }}
+          cp Dockerfile /home/kaden/calenduh/${{ github.ref_name }}
           rm .env
           
 
