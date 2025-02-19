@@ -29,7 +29,7 @@ func Migrate(db *sql.DB) {
 		log.Fatal("could not create migration driver:", err)
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations",
+		"file://postgres/migrations/",
 		"postgres", driver)
 	if err != nil {
 		log.Fatal("migration setup failed:", err)
