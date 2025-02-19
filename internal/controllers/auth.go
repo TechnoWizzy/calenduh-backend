@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"calenduh-backend/internal/database"
+	"calenduh-backend/internal/sqlc"
 	"calenduh-backend/internal/util"
 	"crypto/rsa"
 	"encoding/base64"
@@ -12,7 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/jackc/pgx/v5"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"io"
 	"log"
 	"math/big"
@@ -82,19 +84,19 @@ func Authorize(c *gin.Context) {
 		return
 	}
 
-	session, err := database.FetchSessionById(c, sessionId)
+	session, err := database.Queries.GetSessionById(c, sessionId)
 	if err != nil {
 		c.Next()
 		return
 	}
 
-	user, err := database.FetchUserById(c, session.UserId)
+	user, err := database.Queries.GetUserById(c, session.UserID)
 	if err != nil {
 		c.Next()
 		return
 	}
 
-	c.Set("user", *user)
+	c.Set("user", &user)
 	c.Next()
 	return
 }
@@ -126,12 +128,12 @@ func AppleLogin(c *gin.Context) {
 		email = token.Claims.(jwt.MapClaims)["email"].(string)
 	}
 
-	user, err := database.FetchUserById(c, appleLoginBody.UserId)
+	user, err := database.Queries.GetUserById(c, appleLoginBody.UserId)
 
 	if err != nil { // No user
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			user, err = database.CreateUser(c, &database.CreateUserOptions{
-				Id:       &appleLoginBody.UserId,
+		if errors.Is(err, pgx.ErrNoRows) {
+			user, err = database.Queries.InsertUser(c, sqlc.InsertUserParams{
+				UserID:   appleLoginBody.UserId,
 				Email:    email,
 				Username: email,
 			})
@@ -146,9 +148,10 @@ func AppleLogin(c *gin.Context) {
 		}
 	}
 
-	session, err := database.CreateSession(c, &database.CreateSessionOptions{
-		UserId: user.UserId,
-		Type:   database.AppleSession,
+	session, err := database.Queries.InsertSession(c, sqlc.InsertSessionParams{
+		SessionID: gonanoid.Must(),
+		UserID:    user.UserID,
+		Type:      sqlc.SessionTypeAPPLE,
 	})
 
 	if err != nil { // Failed to create session
@@ -157,7 +160,7 @@ func AppleLogin(c *gin.Context) {
 	}
 
 	c.PureJSON(http.StatusOK, gin.H{
-		"sessionId": session.SessionId,
+		"sessionId": session.SessionID,
 	})
 	return
 }
@@ -284,11 +287,12 @@ func GoogleAuth(c *gin.Context) {
 		return
 	}
 
-	user, err := database.FetchUserByEmail(c, googleUser.Email)
+	user, err := database.Queries.GetUserByEmail(c, googleUser.Email)
 	if err != nil { // User does not exist yet
 		username := strings.Split(googleUser.Email, "@")[0]
 
-		user, err = database.CreateUser(c, &database.CreateUserOptions{
+		user, err = database.Queries.InsertUser(c, sqlc.InsertUserParams{
+			UserID:   googleUser.ID,
 			Email:    googleUser.Email,
 			Username: username,
 		})
@@ -303,9 +307,10 @@ func GoogleAuth(c *gin.Context) {
 		}
 	}
 
-	session, err := database.CreateSession(c, &database.CreateSessionOptions{
-		UserId:       user.UserId,
-		Type:         database.GoogleSession,
+	session, err := database.Queries.InsertSession(c, sqlc.InsertSessionParams{
+		SessionID:    googleUser.ID,
+		UserID:       user.UserID,
+		Type:         sqlc.SessionTypeGOOGLE,
 		AccessToken:  tokenData.AccessToken,
 		RefreshToken: tokenData.RefreshToken,
 		ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
@@ -320,11 +325,11 @@ func GoogleAuth(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("sessionId", session.SessionId, tokenData.ExpiresIn, "/",
+	c.SetCookie("sessionId", session.SessionID, tokenData.ExpiresIn, "/",
 		c.Request.Host, false, true)
 
 	log.Print(*redirectUri)
-	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionId)
+	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionID)
 }
 
 // DiscordLogin
@@ -449,10 +454,11 @@ func DiscordAuth(c *gin.Context) {
 		return
 	}
 
-	user, err := database.FetchUserByEmail(c, discordUser.Email)
+	user, err := database.Queries.GetUserByEmail(c, discordUser.Email)
 	if err != nil { // User does not exist yet
 
-		user, err = database.CreateUser(c, &database.CreateUserOptions{
+		user, err = database.Queries.InsertUser(c, sqlc.InsertUserParams{
+			UserID:   discordUser.ID,
 			Email:    discordUser.Email,
 			Username: discordUser.Username,
 		})
@@ -467,9 +473,9 @@ func DiscordAuth(c *gin.Context) {
 		}
 	}
 
-	session, err := database.CreateSession(c, &database.CreateSessionOptions{
-		UserId:       user.UserId,
-		Type:         database.DiscordSession,
+	session, err := database.Queries.InsertSession(c, sqlc.InsertSessionParams{
+		UserID:       user.UserID,
+		Type:         sqlc.SessionTypeDISCORD,
 		AccessToken:  tokenData.AccessToken,
 		RefreshToken: tokenData.RefreshToken,
 		ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
@@ -484,11 +490,11 @@ func DiscordAuth(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("sessionId", session.SessionId, tokenData.ExpiresIn, "/",
+	c.SetCookie("sessionId", session.SessionID, tokenData.ExpiresIn, "/",
 		c.Request.Host, false, true)
 
 	log.Print(*redirectUri)
-	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionId)
+	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionID)
 }
 
 // Logout
@@ -500,7 +506,7 @@ func Logout(c *gin.Context) {
 		return
 	}
 
-	err = database.DeleteSession(c, sessionId)
+	err = database.Queries.DeleteSession(c, sessionId)
 	if err != nil {
 		message := gin.H{
 			"message": "unable to execute query: DeleteSession",

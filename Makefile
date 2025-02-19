@@ -1,5 +1,6 @@
 # Docker Compose arguments
 CONFIG = docker-compose.yml
+POSTGRES_DIR = postgres/migrations
 
 all: build run
 
@@ -14,3 +15,13 @@ stop:
 
 clean:
 	docker compose -f $(CONFIG) down --rmi all --remove-orphans
+
+sqlc:
+	sqlc generate
+
+migration:
+	@read -p "Enter migration name: " name; \
+	migrate create -ext sql -dir $(POSTGRES_DIR) $$name
+
+clean-db:
+	docker compose -f $(CONFIG) down --volumes

@@ -17,14 +17,14 @@ var ActiveUsers = CreateCache(15*time.Minute, time.Minute, "active")
 func CreateCache(defaultExpiration time.Duration, cleanupInterval time.Duration, name string) *cache.Cache {
 	file, err := os.ReadFile(CachePath + name)
 	if err != nil {
-		log.Printf("Unable to read %s cache from file: \n%s", name, err.Error())
+		//log.Printf("Unable to read %s cache from file: \n%s", name, err.Error())
 		return cache.New(defaultExpiration, cleanupInterval)
 	}
 
 	values := make(map[string]cache.Item)
 	decoder := gob.NewDecoder(bytes.NewBuffer(file))
 	if err := decoder.Decode(&values); err != nil {
-		log.Printf("Unable to decode %s cache: \n%s", name, err.Error())
+		//log.Printf("Unable to decode %s cache: \n%s", name, err.Error())
 		return cache.New(defaultExpiration, cleanupInterval)
 	}
 

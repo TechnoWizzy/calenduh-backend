@@ -2,22 +2,22 @@ volumes:
   cache:
     driver: local
   database:
-    name: database
+    driver: local
 
 services:
-  mongo:
-    image: mongo:4.4.6
-    container_name: mongo
-    env_file:
-      - .env
-    networks:
-      - network
-    ports:
-      - ${MONGO_EXTERNAL_PORT}:${MONGO_INTERNAL_PORT}
+  calenduh-db:
+    container_name: calenduh-db
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - database:/data/db
+      - database:/var/lib/postgresql/data
 
   calenduh-api:
+    image: calenduh-backend
     container_name: calenduh-api
     restart: always
     build:
@@ -25,15 +25,14 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    networks:
-      - network
     ports:
       - "8080:8080"
     volumes:
       - cache:/var/lib/cache
     depends_on:
-      - mongo
+      - calenduh-db
 
 networks:
-  network:
+  default:
+    name: network
     driver: bridge
