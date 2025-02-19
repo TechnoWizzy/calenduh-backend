@@ -33,8 +33,10 @@ jobs:
           file: Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/calenduh:backend
-          cache-from: type=local
-          cache-to: type=local,mode=max
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/calenduh:cache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/calenduh:cache,mode=push
+
+
 
       # Clean Up Environment Variables
       - name: Clean Up Environment Variables
