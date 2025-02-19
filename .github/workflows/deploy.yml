@@ -33,17 +33,6 @@ jobs:
           file: Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/calenduh:backend
-
-      # Clean Up Environment Variables
-      - name: Load Configuration and Clean up Environment Variables
-        run: |
-          cp .env /home/kaden/calenduh/${{ github.ref_name }}
-          cp docker-compose.yml /home/kaden/calenduh/${{ github.ref_name }}
-          rm .env
-
-      # Run Docker Image
-      - name: Run Docker Image
-        working-directory: /home/kaden/calenduh/${{ github.ref_name }}
         run: |
           docker compose down calenduh-api || true
           docker compose up calenduh-api -d
