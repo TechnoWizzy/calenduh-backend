@@ -35,9 +35,10 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/calenduh:backend
 
       # Clean Up Environment Variables
-      - name: Clean Up Environment Variables
+      - name: Clean Up Environment Variables and Load Configuration
         run: |
           rm .env
+          cp docker-compose.yml /home/kaden/calenduh/${{ github.ref_name }}
 
       # Pull Docker Image
       - name: Pull Docker Image
