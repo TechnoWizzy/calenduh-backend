@@ -17,7 +17,6 @@ services:
       - database:/var/lib/postgresql/data
 
   calenduh-api:
-    image: calenduh-api
     container_name: calenduh-api
     restart: always
     build:
