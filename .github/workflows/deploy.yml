@@ -46,6 +46,6 @@ jobs:
       - name: Pull Docker Image
         working-directory: /home/kaden/calenduh/${{ github.ref_name }}
         run: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/calenduh-api
+          docker pull ${{ secrets.DOCKER_USERNAME }}/calenduh-api:latest
           docker compose down calenduh-api
           docker compose up calenduh-api -d
