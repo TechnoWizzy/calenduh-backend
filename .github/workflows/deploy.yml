@@ -26,13 +26,7 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
 
       # Build and Push Docker Image
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/calenduh:backend
+      - name: Build and Run Docker Image
         run: |
-          docker compose down calenduh-api || true
-          docker compose up calenduh-api -d
+          make clean
+          make
