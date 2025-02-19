@@ -32,7 +32,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/calenduh:api
+          tags: ${{ secrets.DOCKER_USERNAME }}/calenduh:backend
 
       # Clean Up Environment Variables
       - name: Load Configuration and Clean up Environment Variables
@@ -46,6 +46,6 @@ jobs:
       - name: Pull Docker Image
         working-directory: /home/kaden/calenduh/${{ github.ref_name }}
         run: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/calenduh:api
+          docker pull ${{ secrets.DOCKER_USERNAME }}/calenduh:backend
           docker compose down calenduh-api
           docker compose up calenduh-api -d
