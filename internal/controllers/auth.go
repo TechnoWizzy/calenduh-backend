@@ -521,6 +521,16 @@ func Logout(c *gin.Context) {
 	return
 }
 
+func GetAllSessions(c *gin.Context) {
+	sessions, err := database.Queries.GetAllSessions(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, sessions)
+}
+
 // Fetch Apple’s public keys and return the key that matches the given `kid`
 func getSigningKey(kid string) (*rsa.PublicKey, error) {
 	resp, err := http.Get(util.GetEnv("APPLE_AUTH_KEYS_URL"))

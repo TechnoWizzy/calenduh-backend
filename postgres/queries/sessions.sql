@@ -1,3 +1,6 @@
+-- name: GetAllSessions :many
+select * from sessions;
+
 -- name: GetSessionById :one
 select * from sessions
 where session_id = @session_id;

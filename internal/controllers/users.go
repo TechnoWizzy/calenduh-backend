@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"calenduh-backend/internal/database"
 	"calenduh-backend/internal/sqlc"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -19,6 +20,16 @@ func GetMe(c *gin.Context) {
 
 	c.PureJSON(http.StatusOK, user)
 	return
+}
+
+func GetAllUsers(c *gin.Context) {
+	users, err := database.Queries.GetAllUsers(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.PureJSON(http.StatusOK, users)
 }
 
 func ParseUser(c *gin.Context) (*sqlc.User, error) {

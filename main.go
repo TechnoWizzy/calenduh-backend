@@ -94,8 +94,10 @@ func setupRoutes(router *gin.Engine) {
 		authentication.GET("/discord/login", controllers.DiscordLogin)
 		authentication.GET("/discord", controllers.DiscordAuth)
 		authentication.GET("/logout", controllers.Logout)
+		authentication.GET("/sessions", controllers.GetAllSessions)
 	}
 	{
+		users.GET("/", controllers.GetAllUsers)
 		users.GET("/@me", controllers.GetMe)
 	}
 	{
