@@ -308,7 +308,7 @@ func GoogleAuth(c *gin.Context) {
 	}
 
 	session, err := database.Queries.InsertSession(c, sqlc.InsertSessionParams{
-		SessionID:    googleUser.ID,
+		SessionID:    gonanoid.Must(),
 		UserID:       user.UserID,
 		Type:         sqlc.SessionTypeGOOGLE,
 		AccessToken:  tokenData.AccessToken,
@@ -474,6 +474,7 @@ func DiscordAuth(c *gin.Context) {
 	}
 
 	session, err := database.Queries.InsertSession(c, sqlc.InsertSessionParams{
+		SessionID:    gonanoid.Must(),
 		UserID:       user.UserID,
 		Type:         sqlc.SessionTypeDISCORD,
 		AccessToken:  tokenData.AccessToken,
