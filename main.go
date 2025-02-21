@@ -4,12 +4,14 @@ import (
 	"calenduh-backend/internal/controllers"
 	"calenduh-backend/internal/database"
 	"calenduh-backend/internal/util"
+	"calenduh-backend/internal/handlers"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"github.com/joho/godotenv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +20,11 @@ import (
 
 func main() {
 	timeStarted := time.Now()
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("error loading .env file")
+	}
 
 	// Database Connection
 	instance, err := database.New(util.GetEnv("POSTGRESQL_URL"))
@@ -112,6 +119,18 @@ func setupRoutes(router *gin.Engine) {
 	{
 		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
 	}
+
+	database.ConnectDB("POSTGRESQL_URL")
+
+	r := gin.Default()
+
+	// Event CRUD routes
+	r.POST("/events", handlers.CreateEventHandler)
+	r.GET("/events/:id", handlers.GetEventHandler)
+	r.PUT("/events/:id", handlers.UpdateEventHandler)
+	r.DELETE("/events/:id", handlers.DeleteEventHandler)
+	
+	r.Run(":8080")
 }
 
 func cleanup(server *http.Server) {
