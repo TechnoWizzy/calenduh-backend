@@ -17,21 +17,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var DB *sql.DB
-
-func ConnectDB(connectionString string) {
-	var err error
-	DB, err = sql.Open("postgres", connectionString)
-	if err != nil {
-		log.Fatal("failed to connect to database:", err)
-	}
-
-	err = DB.Ping()
-	if err != nil {
-		log.Fatal("database unreachable:", err)
-	}
-	fmt.Println("connected successfully to postgresql")
-}
 
 type Database struct {
 	Conn    *sql.DB
