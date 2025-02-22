@@ -28,5 +28,12 @@ jobs:
       # Build and Push Docker Image
       - name: Build and Run Docker Image
         run: |
-          make clean
-          make
+          make build
+          make run
+
+      # Clean up Docker Resources
+      - name: Clean up Docker resources
+        run: |
+          docker system prune -af
+          docker builder prune -af
+          docker volume prune -f
