@@ -18,6 +18,11 @@ jobs:
         run: |
           cp /home/kaden/calenduh/.env .
 
+      # Compile SQL Queries
+      - name: Compile SQL Queries
+        run: |
+          make sqlc
+
       # Login To Docker
       - name: Login to Docker
         uses: docker/login-action@v3
