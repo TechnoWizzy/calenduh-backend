@@ -34,21 +34,21 @@ create table calendars (
     is_public boolean not null default false
 );
 
+create table events (
+                        event_id text primary key,
+                        calendar_id text not null references calendars(calendar_id) on delete cascade on update cascade,
+                        name text not null,
+                        location text,
+                        description text,
+                        notification text,
+                        frequency int,
+                        priority int,
+                        start_time timestamp(3),
+                        end_time timestamp(3)
+);
+
 create table subscriptions (
     user_id text not null references users(user_id) on delete cascade on update cascade,
     calendar_id text not null references calendars(calendar_id) on delete cascade on update cascade,
     primary key (user_id, calendar_id)
-);
-
-create table events (
-    event_id text primary key,
-    calendar_id text not null references calendars(calendar_id) on delete cascade on update cascade,
-    name text not null,
-    location text,
-    description text,
-    notification text,
-    frequency int,
-    priority int,
-    start_time timestamp(3),
-    end_time timestamp(3)
 );

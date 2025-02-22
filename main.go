@@ -6,12 +6,12 @@ import (
 	"calenduh-backend/internal/util"
 	// "calenduh-backend/internal/handlers"
 	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"github.com/joho/godotenv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -90,10 +90,11 @@ func main() {
 func setupRoutes(router *gin.Engine) {
 	authentication := router.Group("/auth")
 	users := router.Group("/users")
-	//events := router.Group("/event")
-	//groups := router.Group("/groups")
+	_ = router.Group("/event")
+	_ = router.Group("/groups")
 	calendars := router.Group("/calendars")
-	//subscriptions := router.Group("/subscriptions")
+	_ = router.Group("/subscriptions")
+	_ = router.Group("/groups/:group_id/members")
 	{
 		authentication.POST("/apple/login", controllers.AppleLogin)
 		authentication.GET("/google/login", controllers.GoogleLogin)
@@ -105,30 +106,44 @@ func setupRoutes(router *gin.Engine) {
 	}
 	{
 		users.GET("/", controllers.GetAllUsers)
-		users.GET("/@me", controllers.GetMe)
+		users.GET("/@me", controllers.LoggedIn(controllers.GetMe))
+		//users.POST("/", controllers.CreateUser) // Create a new user
+		//users.GET("/:user_id", controllers.GetUser) // Get a specific user
+		//users.PUT("/:user_id", controllers.UpdateUser) // Update user details
+		//users.DELETE("/:user_id", controllers.DeleteUser) // Delete a user
 	}
 	{
-		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
+		//events.POST("/:calendar_id", controllers.CreateEvent) // Create a new event
+		//events.GET("/:event_id", controllers.GetEvent)        // Get a specific event
+		//events.PUT("/:event_id", controllers.UpdateEvent)     // Update an event
+		//events.DELETE("/:event_id", controllers.DeleteEvent)  // Delete an event
 	}
 	{
-		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
+		//groups.GET("/", controllers.GetAllGroups) // List all groups
+		//groups.POST("/", controllers.CreateGroup) // Create a new group
+		//groups.GET("/:group_id", controllers.GetGroup) // Get a specific group
+		//groups.PUT("/:group_id", controllers.UpdateGroup) // Update a group
+		//groups.DELETE("/:group_id", controllers.DeleteGroup) // Delete a group
 	}
 	{
-		calendars.GET("/:calendar_id", controllers.FetchCalendar)
+		//calendars.GET("/", controllers.GetAllCalendars)               // List all calendars
+		//calendars.POST("/", controllers.CreateCalendar)               // Create a new calendar
+		calendars.GET("/:calendar_id", controllers.FetchCalendar) // Get a specific calendar
+		//calendars.PUT("/:calendar_id", controllers.UpdateCalendar)    // Update a calendar
+		//calendars.DELETE("/:calendar_id", controllers.DeleteCalendar) // Delete a calendar
 	}
 	{
-		// POST, GET, DELETE, PUT-all fields update, PATCH-certain selected fields update
+		//subscriptions.GET("/", controllers.GetAllSubscriptions)                        // List all subscriptions
+		//subscriptions.POST("/", controllers.CreateSubscription)                        // Create a new subscription
+		//subscriptions.GET("/:user_id/:calendar_id", controllers.GetSubscription)       // Get a specific subscription
+		//subscriptions.DELETE("/:user_id/:calendar_id", controllers.DeleteSubscription) // Delete a subscription
 	}
 
-	// r := gin.Default()
-
-	// Event CRUD routes
-	// r.POST("/events", handlers.CreateEventHandler)
-	// r.GET("/events/:id", handlers.GetEventHandler)
-	// r.PUT("/events/:id", handlers.UpdateEventHandler)
-	// r.DELETE("/events/:id", handlers.DeleteEventHandler)
-	
-	// r.Run(":8080")
+	{
+		//groupMembers.GET("/", controllers.GetGroupMembers)              // List members of a group
+		//groupMembers.POST("/", controllers.AddGroupMember)              // Add a member to a group
+		//groupMembers.DELETE("/:user_id", controllers.RemoveGroupMember) // Remove a member from a group
+	}
 }
 
 func cleanup(server *http.Server) {

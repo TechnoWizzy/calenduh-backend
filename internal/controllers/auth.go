@@ -24,6 +24,8 @@ import (
 	"time"
 )
 
+type LoggedInFunc func(*gin.Context, *sqlc.User, *[]sqlc.Group)
+
 type AppleLoginBody struct {
 	AuthorizationCode string  `json:"authorizationCode"`
 	IdentityToken     string  `json:"identityToken"`
@@ -99,6 +101,24 @@ func Authorize(c *gin.Context) {
 	c.Set("user", &user)
 	c.Next()
 	return
+}
+
+func LoggedIn(next LoggedInFunc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		v, found := c.Get("user")
+		if !found {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "You are not logged in"})
+			return
+		}
+
+		user := v.(*sqlc.User)
+		groups, err := database.Queries.FetchGroupsByUserId(c, user.UserID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "unable to fetch groups: " + err.Error()})
+			return
+		}
+		next(c, user, &groups)
+	}
 }
 
 // AppleLogin
@@ -311,8 +331,8 @@ func GoogleAuth(c *gin.Context) {
 		SessionID:    gonanoid.Must(),
 		UserID:       user.UserID,
 		Type:         sqlc.SessionTypeGOOGLE,
-		AccessToken:  tokenData.AccessToken,
-		RefreshToken: tokenData.RefreshToken,
+		AccessToken:  &tokenData.AccessToken,
+		RefreshToken: &tokenData.RefreshToken,
 		ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
 	})
 
@@ -477,8 +497,8 @@ func DiscordAuth(c *gin.Context) {
 		SessionID:    gonanoid.Must(),
 		UserID:       user.UserID,
 		Type:         sqlc.SessionTypeDISCORD,
-		AccessToken:  tokenData.AccessToken,
-		RefreshToken: tokenData.RefreshToken,
+		AccessToken:  &tokenData.AccessToken,
+		RefreshToken: &tokenData.RefreshToken,
 		ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
 	})
 

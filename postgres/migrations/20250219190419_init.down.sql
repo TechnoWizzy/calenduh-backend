@@ -1,15 +1,15 @@
-drop type session_type;
-
-drop table users;
-
-drop table sessions;
-
-drop table groups;
+drop table subscriptions;
 
 drop table group_members;
 
-drop table subscriptions;
+drop table events;
 
 drop table calendars;
 
-drop table events;
+drop table groups;
+
+drop table sessions;
+
+drop table users;
+
+drop type session_type;
