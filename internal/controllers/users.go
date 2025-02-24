@@ -24,7 +24,7 @@ func GetAllUsers(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.JSON(http.StatusOK, []sqlc.User{})
+			c.JSON(http.StatusOK, make([]sqlc.User, 0))
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}

@@ -15,7 +15,7 @@ func GetAllCalendars(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.JSON(http.StatusOK, []sqlc.Calendar{})
+			c.JSON(http.StatusOK, make([]sqlc.Calendar, 0))
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -51,7 +51,7 @@ func GetUserCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.JSON(http.StatusOK, []sqlc.Calendar{})
+			c.JSON(http.StatusOK, make([]sqlc.Calendar, 0))
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -70,7 +70,7 @@ func GetSubscribedCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.JSON(http.StatusOK, []sqlc.Calendar{})
+			c.JSON(http.StatusOK, make([]sqlc.Calendar, 0))
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}

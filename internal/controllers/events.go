@@ -15,7 +15,7 @@ func GetAllEvents(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.JSON(http.StatusOK, []sqlc.Event{})
+			c.JSON(http.StatusOK, make([]sqlc.Event, 0))
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -63,7 +63,7 @@ func GetCalendarEvents(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.JSON(http.StatusOK, []sqlc.Event{})
+			c.JSON(http.StatusOK, make([]sqlc.Event, 0))
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
