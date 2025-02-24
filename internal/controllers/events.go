@@ -15,7 +15,7 @@ func GetAllEvents(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.JSON(http.StatusOK, make([]sqlc.Event, 0))
+			c.JSON(http.StatusOK, gin.H{"key": "value"})
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
