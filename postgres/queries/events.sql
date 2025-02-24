@@ -8,6 +8,11 @@ select *
 from events
 where event_id = $1;
 
+-- name: GetEventByCalendarId :many
+select *
+from events
+where calendar_id = $1;
+
 -- name: UpdateEvent :one
 update events
 set calendar_id = $1, name = $2, location = $3, description = $4, notification = $5, frequency = $6, priority = $7, start_time = $8, end_time = $9

@@ -37,6 +37,26 @@ func GetEvent(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
 	c.JSON(http.StatusOK, event)
 }
 
+func GetCalendarEvents(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
+	calendarId := c.Param("calendar_id")
+	if calendarId == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
+		return
+	}
+
+	events, err := database.Db.Queries.GetEventByCalendarId(c, calendarId)
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "calendar not found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		}
+	}
+
+	c.JSON(http.StatusOK, events)
+}
+
 func CreateEvent(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 	calendarId := c.Param("calendar_id")
 	if calendarId == "" {
