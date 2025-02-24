@@ -126,12 +126,13 @@ func setupRoutes(router *gin.Engine) {
 	{ // Calendars
 		calendars.GET("/", controllers.GetAllCalendars)                                         // List all calendars
 		calendars.GET("/@me", controllers.LoggedIn(controllers.GetUserCalendars))               // List all calendars owned by user
+		calendars.GET("/@groups", controllers.LoggedIn(controllers.GetGroupCalendars))          // List all calendars owned by user groups
 		calendars.GET("/@subscribed", controllers.LoggedIn(controllers.GetSubscribedCalendars)) // List all the calendars subscribed to by user
 		calendars.GET("/:calendar_id", controllers.LoggedIn(controllers.GetCalendar))           // Get a specific calendar
 		calendars.POST("/", controllers.LoggedIn(controllers.CreateUserCalendar))               // Create a new user calendar
-		//calendars.POST("/group_id", controllers.LoggedIn(controllers.CreateGroupCalendar))      // Create a new group calendar
-		calendars.PUT("/:calendar_id", controllers.LoggedIn(controllers.UpdateCalendar))    // Update a calendar
-		calendars.DELETE("/:calendar_id", controllers.LoggedIn(controllers.DeleteCalendar)) // Delete a calendar
+		calendars.POST("/:group_id", controllers.LoggedIn(controllers.CreateGroupCalendar))     // Create a new group calendar
+		calendars.PUT("/:calendar_id", controllers.LoggedIn(controllers.UpdateCalendar))        // Update a calendar
+		calendars.DELETE("/:calendar_id", controllers.LoggedIn(controllers.DeleteCalendar))     // Delete a calendar
 	}
 	{ // Subscriptions
 		//subscriptions.GET("/", controllers.GetAllSubscriptions)                        // List all subscriptions

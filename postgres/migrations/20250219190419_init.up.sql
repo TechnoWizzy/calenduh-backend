@@ -31,7 +31,9 @@ create table calendars (
     user_id text references users(user_id) on delete cascade on update cascade,
     group_id text references groups(group_id) on delete cascade on update cascade,
     title text not null,
-    is_public boolean not null default false
+    is_public boolean not null default false,
+
+    constraint ownership check ( user_id is not null or group_id is not null )
 );
 
 create table events (

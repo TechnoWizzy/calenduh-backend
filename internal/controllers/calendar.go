@@ -62,7 +62,17 @@ func GetUserCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 }
 
 func GetGroupCalendars(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
-	// ToDo
+	calendars := make([]sqlc.Calendar, 0)
+	for _, group := range groups {
+		groupCalendars, err := database.Db.Queries.GetCalendarsByUserId(c, &group.GroupID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		calendars = append(calendars, groupCalendars...)
+	}
+
+	c.JSON(http.StatusOK, calendars)
 }
 
 func GetSubscribedCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
@@ -89,6 +99,36 @@ func CreateUserCalendar(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 
 	input.CalendarID = gonanoid.Must()
 	input.UserID = &user.UserID
+
+	calendar, err := database.Db.Queries.CreateCalendar(c, input)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to create calendar" + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, calendar)
+}
+
+func CreateGroupCalendar(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
+	groupId := c.Param("group_id")
+	if groupId == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "group_id is required"})
+		return
+	}
+
+	var input sqlc.CreateCalendarParams
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input" + err.Error()})
+		return
+	}
+
+	input.CalendarID = gonanoid.Must()
+	input.GroupID = &groupId
+
+	if !CanEditGroup(*input.GroupID, groups) {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 
 	calendar, err := database.Db.Queries.CreateCalendar(c, input)
 	if err != nil {

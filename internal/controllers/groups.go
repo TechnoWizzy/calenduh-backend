@@ -58,7 +58,14 @@ func CreateGroup(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 			return err
 		}
 
-		// ToDo Create Group Member
+		params := sqlc.CreateGroupMemberParams{
+			GroupID: group.GroupID,
+			UserID:  user.UserID,
+		}
+		if err = queries.CreateGroupMember(c, params); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return err
+		}
 
 		c.JSON(http.StatusCreated, group)
 		return nil
