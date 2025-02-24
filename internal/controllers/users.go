@@ -22,7 +22,12 @@ func GetMe(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 func GetAllUsers(c *gin.Context) {
 	users, err := database.Db.Queries.GetAllUsers(c)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.JSON(http.StatusOK, []sqlc.User{})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 

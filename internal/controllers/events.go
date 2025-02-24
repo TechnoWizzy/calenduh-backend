@@ -10,6 +10,21 @@ import (
 	"net/http"
 )
 
+func GetAllEvents(c *gin.Context) {
+	events, err := database.Db.Queries.GetAllEvents(c)
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.JSON(http.StatusOK, []sqlc.Event{})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, events)
+}
+
 func GetEvent(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
 	calendarId := c.Param("calendar_id")
 	eventId := c.Param("event_id")
@@ -48,10 +63,11 @@ func GetCalendarEvents(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "calendar not found"})
+			c.JSON(http.StatusOK, []sqlc.Event{})
 		default:
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
+		return
 	}
 
 	c.JSON(http.StatusOK, events)

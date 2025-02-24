@@ -13,7 +13,13 @@ import (
 func GetAllCalendars(c *gin.Context) {
 	calendars, err := database.Db.Queries.GetAllCalendars(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.JSON(http.StatusOK, []sqlc.Calendar{})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
 	}
 
 	c.JSON(http.StatusOK, calendars)
@@ -45,7 +51,7 @@ func GetUserCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "no calendars found"})
+			c.JSON(http.StatusOK, []sqlc.Calendar{})
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -64,7 +70,7 @@ func GetSubscribedCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "no calendars found"})
+			c.JSON(http.StatusOK, []sqlc.Calendar{})
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}

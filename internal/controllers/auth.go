@@ -545,7 +545,12 @@ func Logout(c *gin.Context) {
 func GetAllSessions(c *gin.Context) {
 	sessions, err := database.Db.Queries.GetAllSessions(c)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.JSON(http.StatusOK, []sqlc.Session{})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 

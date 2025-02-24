@@ -1,7 +1,6 @@
--- name: CreateEvent :one
-insert into events (event_id, calendar_id, name, location, description, notification, frequency, priority, start_time, end_time)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-returning *;
+-- name: GetAllEvents :many
+select *
+from events;
 
 -- name: GetEventById :one
 select *
@@ -12,6 +11,11 @@ where event_id = $1;
 select *
 from events
 where calendar_id = $1;
+
+-- name: CreateEvent :one
+insert into events (event_id, calendar_id, name, location, description, notification, frequency, priority, start_time, end_time)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+returning *;
 
 -- name: UpdateEvent :one
 update events

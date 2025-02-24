@@ -109,9 +109,10 @@ func setupRoutes(router *gin.Engine) {
 		users.DELETE("/:user_id", controllers.DeleteUser)                    // Delete user by id
 	}
 	{ // Events
-		events.POST("/:calendar_id", controllers.LoggedIn(controllers.CreateEvent))             // Create a new event
+		events.GET("/", controllers.GetAllEvents)                                               // List all events
 		events.GET("/:calendar_id", controllers.LoggedIn(controllers.GetCalendarEvents))        // Get Calendar events
 		events.GET("/:calendar_id/:event_id", controllers.LoggedIn(controllers.GetEvent))       // Get a specific event
+		events.POST("/:calendar_id", controllers.LoggedIn(controllers.CreateEvent))             // Create a new event
 		events.PUT("/:calendar_id/:event_id", controllers.LoggedIn(controllers.UpdateEvent))    // Update an event
 		events.DELETE("/:calendar_id/:event_id", controllers.LoggedIn(controllers.DeleteEvent)) // Delete an event
 	}

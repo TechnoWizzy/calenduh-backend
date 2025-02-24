@@ -15,9 +15,9 @@ func GetAllGroups(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "groups not found"})
+			c.JSON(http.StatusOK, []sqlc.Group{})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
 	}
