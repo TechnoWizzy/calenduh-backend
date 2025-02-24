@@ -86,7 +86,7 @@ func main() {
 func setupRoutes(router *gin.Engine) {
 	authentication := router.Group("/auth")
 	users := router.Group("/users")
-	events := router.Group("/event")
+	events := router.Group("/events")
 	groups := router.Group("/groups")
 	calendars := router.Group("/calendars")
 	_ = router.Group("/subscriptions")
