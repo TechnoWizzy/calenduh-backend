@@ -34,6 +34,7 @@ jobs:
       - name: Build and Run Docker Image
         run: |
           make build
+          make stop
           make run
 
       # Clean up Docker Resources
