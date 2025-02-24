@@ -7,14 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
-	"log"
 	"net/http"
 )
 
 func GetAllEvents(c *gin.Context) {
 	events, err := database.Db.Queries.GetAllEvents(c)
 	if err != nil {
-		log.Println("Error: " + err.Error())
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
 			c.JSON(http.StatusOK, make([]sqlc.Event, 0))
@@ -23,8 +21,6 @@ func GetAllEvents(c *gin.Context) {
 		}
 		return
 	}
-
-	log.Println(events)
 
 	c.JSON(http.StatusOK, events)
 }
