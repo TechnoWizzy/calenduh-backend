@@ -21,29 +21,27 @@ import (
 func main() {
 	timeStarted := time.Now()
 
-	err := godotenv.Load()
-	if err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Fatal("error loading .env file")
 	}
 
 	// Database Connection
-	instance, err := database.New(util.GetEnv("POSTGRESQL_URL"))
-	if err != nil {
+
+	if err := database.New(util.GetEnv("POSTGRESQL_URL")); err != nil {
 		log.Fatal(err)
 	}
 	defer func() {
-		if instance.Pool != nil {
-			instance.Pool.Close()
+		if database.Db.Pool != nil {
+			database.Db.Pool.Close()
 		}
-		if instance.Conn != nil {
-			if err := instance.Conn.Close(); err != nil {
+		if database.Db.Conn != nil {
+			if err := database.Db.Conn.Close(); err != nil {
 				log.Println("failed to close database connection:", err)
 			}
 		}
 	}()
 
-	env := util.GetEnv("GO_ENV")
-	if env == "production" {
+	if env := util.GetEnv("GO_ENV"); env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -83,19 +81,17 @@ func main() {
 	// Wait for shutdown signal
 	<-shutdown
 	cleanup(server)
-
-	// Shutdown HTTP server gracefully
 }
 
 func setupRoutes(router *gin.Engine) {
 	authentication := router.Group("/auth")
 	users := router.Group("/users")
-	_ = router.Group("/event")
-	_ = router.Group("/groups")
+	events := router.Group("/event")
+	groups := router.Group("/groups")
 	calendars := router.Group("/calendars")
 	_ = router.Group("/subscriptions")
 	_ = router.Group("/groups/:group_id/members")
-	{
+	{ // Auth
 		authentication.POST("/apple/login", controllers.AppleLogin)
 		authentication.GET("/google/login", controllers.GoogleLogin)
 		authentication.GET("/google", controllers.GoogleAuth)
@@ -104,42 +100,44 @@ func setupRoutes(router *gin.Engine) {
 		authentication.GET("/logout", controllers.Logout)
 		authentication.GET("/sessions", controllers.GetAllSessions)
 	}
-	{
-		users.GET("/", controllers.GetAllUsers)
-		users.GET("/@me", controllers.LoggedIn(controllers.GetMe))
-		//users.POST("/", controllers.CreateUser) // Create a new user
-		//users.GET("/:user_id", controllers.GetUser) // Get a specific user
-		//users.PUT("/:user_id", controllers.UpdateUser) // Update user details
-		//users.DELETE("/:user_id", controllers.DeleteUser) // Delete a user
+	{ // Users
+		users.GET("/", controllers.GetAllUsers)                              // Get all users
+		users.GET("/@me", controllers.LoggedIn(controllers.GetMe))           // Get self user
+		users.GET("/:user_id", controllers.LoggedIn(controllers.GetUser))    // Get a specific user
+		users.PUT("/:user_id", controllers.LoggedIn(controllers.UpdateUser)) // Update user details
+		users.DELETE("/", controllers.LoggedIn(controllers.DeleteMe))        // Delete self user
+		users.DELETE("/:user_id", controllers.DeleteUser)                    // Delete user by id
 	}
-	{
-		//events.POST("/:calendar_id", controllers.CreateEvent) // Create a new event
-		//events.GET("/:event_id", controllers.GetEvent)        // Get a specific event
-		//events.PUT("/:event_id", controllers.UpdateEvent)     // Update an event
-		//events.DELETE("/:event_id", controllers.DeleteEvent)  // Delete an event
+	{ // Events
+		events.POST("/:calendar_id", controllers.LoggedIn(controllers.CreateEvent))             // Create a new event
+		events.GET("/:calendar_id/:event_id", controllers.LoggedIn(controllers.GetEvent))       // Get a specific event
+		events.PUT("/:calendar_id/:event_id", controllers.LoggedIn(controllers.UpdateEvent))    // Update an event
+		events.DELETE("/:calendar_id/:event_id", controllers.LoggedIn(controllers.DeleteEvent)) // Delete an event
 	}
-	{
-		//groups.GET("/", controllers.GetAllGroups) // List all groups
-		//groups.POST("/", controllers.CreateGroup) // Create a new group
-		//groups.GET("/:group_id", controllers.GetGroup) // Get a specific group
-		//groups.PUT("/:group_id", controllers.UpdateGroup) // Update a group
-		//groups.DELETE("/:group_id", controllers.DeleteGroup) // Delete a group
+	{ // Groups
+		groups.GET("/", controllers.GetAllGroups)                                  // List all groups
+		groups.GET("/:group_id", controllers.LoggedIn(controllers.GetGroup))       // Get a specific group
+		groups.POST("/", controllers.LoggedIn(controllers.CreateGroup))            // Create a new group
+		groups.PUT("/:group_id", controllers.LoggedIn(controllers.UpdateGroup))    // Update a group
+		groups.DELETE("/:group_id", controllers.LoggedIn(controllers.DeleteGroup)) // Delete a group
 	}
-	{
-		//calendars.GET("/", controllers.GetAllCalendars)               // List all calendars
-		//calendars.POST("/", controllers.CreateCalendar)               // Create a new calendar
-		calendars.GET("/:calendar_id", controllers.FetchCalendar) // Get a specific calendar
-		//calendars.PUT("/:calendar_id", controllers.UpdateCalendar)    // Update a calendar
-		//calendars.DELETE("/:calendar_id", controllers.DeleteCalendar) // Delete a calendar
+	{ // Calendars
+		calendars.GET("/", controllers.GetAllCalendars)                                         // List all calendars
+		calendars.GET("/@me", controllers.LoggedIn(controllers.GetUserCalendars))               // List all calendars owned by user
+		calendars.GET("/@subscribed", controllers.LoggedIn(controllers.GetSubscribedCalendars)) // List all the calendars subscribed to by user
+		calendars.GET("/:calendar_id", controllers.LoggedIn(controllers.GetCalendar))           // Get a specific calendar
+		calendars.POST("/", controllers.LoggedIn(controllers.CreateUserCalendar))               // Create a new user calendar
+		//calendars.POST("/group_id", controllers.LoggedIn(controllers.CreateGroupCalendar))      // Create a new group calendar
+		calendars.PUT("/:calendar_id", controllers.LoggedIn(controllers.UpdateCalendar))    // Update a calendar
+		calendars.DELETE("/:calendar_id", controllers.LoggedIn(controllers.DeleteCalendar)) // Delete a calendar
 	}
-	{
+	{ // Subscriptions
 		//subscriptions.GET("/", controllers.GetAllSubscriptions)                        // List all subscriptions
 		//subscriptions.POST("/", controllers.CreateSubscription)                        // Create a new subscription
 		//subscriptions.GET("/:user_id/:calendar_id", controllers.GetSubscription)       // Get a specific subscription
 		//subscriptions.DELETE("/:user_id/:calendar_id", controllers.DeleteSubscription) // Delete a subscription
 	}
-
-	{
+	{ // GroupMembers
 		//groupMembers.GET("/", controllers.GetGroupMembers)              // List members of a group
 		//groupMembers.POST("/", controllers.AddGroupMember)              // Add a member to a group
 		//groupMembers.DELETE("/:user_id", controllers.RemoveGroupMember) // Remove a member from a group

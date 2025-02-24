@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-type LoggedInFunc func(*gin.Context, *sqlc.User, *[]sqlc.Group)
+type LoggedInFunc func(*gin.Context, sqlc.User, []sqlc.Group)
 
 type AppleLoginBody struct {
 	AuthorizationCode string  `json:"authorizationCode"`
@@ -86,13 +86,13 @@ func Authorize(c *gin.Context) {
 		return
 	}
 
-	session, err := database.Queries.GetSessionById(c, sessionId)
+	session, err := database.Db.Queries.GetSessionById(c, sessionId)
 	if err != nil {
 		c.Next()
 		return
 	}
 
-	user, err := database.Queries.GetUserById(c, session.UserID)
+	user, err := database.Db.Queries.GetUserById(c, session.UserID)
 	if err != nil {
 		c.Next()
 		return
@@ -112,12 +112,12 @@ func LoggedIn(next LoggedInFunc) gin.HandlerFunc {
 		}
 
 		user := v.(*sqlc.User)
-		groups, err := database.Queries.FetchGroupsByUserId(c, user.UserID)
+		groups, err := database.Db.Queries.GetGroupsByUserId(c, user.UserID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "unable to fetch groups: " + err.Error()})
 			return
 		}
-		next(c, user, &groups)
+		next(c, *user, groups)
 	}
 }
 
@@ -148,11 +148,11 @@ func AppleLogin(c *gin.Context) {
 		email = token.Claims.(jwt.MapClaims)["email"].(string)
 	}
 
-	user, err := database.Queries.GetUserById(c, appleLoginBody.UserId)
+	user, err := database.Db.Queries.GetUserById(c, appleLoginBody.UserId)
 
 	if err != nil { // No user
 		if errors.Is(err, pgx.ErrNoRows) {
-			user, err = database.Queries.InsertUser(c, sqlc.InsertUserParams{
+			user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
 				UserID:   appleLoginBody.UserId,
 				Email:    email,
 				Username: email,
@@ -168,7 +168,7 @@ func AppleLogin(c *gin.Context) {
 		}
 	}
 
-	session, err := database.Queries.InsertSession(c, sqlc.InsertSessionParams{
+	session, err := database.Db.Queries.InsertSession(c, sqlc.InsertSessionParams{
 		SessionID: gonanoid.Must(),
 		UserID:    user.UserID,
 		Type:      sqlc.SessionTypeAPPLE,
@@ -307,11 +307,11 @@ func GoogleAuth(c *gin.Context) {
 		return
 	}
 
-	user, err := database.Queries.GetUserByEmail(c, googleUser.Email)
+	user, err := database.Db.Queries.GetUserByEmail(c, googleUser.Email)
 	if err != nil { // User does not exist yet
 		username := strings.Split(googleUser.Email, "@")[0]
 
-		user, err = database.Queries.InsertUser(c, sqlc.InsertUserParams{
+		user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
 			UserID:   googleUser.ID,
 			Email:    googleUser.Email,
 			Username: username,
@@ -327,7 +327,7 @@ func GoogleAuth(c *gin.Context) {
 		}
 	}
 
-	session, err := database.Queries.InsertSession(c, sqlc.InsertSessionParams{
+	session, err := database.Db.Queries.InsertSession(c, sqlc.InsertSessionParams{
 		SessionID:    gonanoid.Must(),
 		UserID:       user.UserID,
 		Type:         sqlc.SessionTypeGOOGLE,
@@ -474,10 +474,10 @@ func DiscordAuth(c *gin.Context) {
 		return
 	}
 
-	user, err := database.Queries.GetUserByEmail(c, discordUser.Email)
+	user, err := database.Db.Queries.GetUserByEmail(c, discordUser.Email)
 	if err != nil { // User does not exist yet
 
-		user, err = database.Queries.InsertUser(c, sqlc.InsertUserParams{
+		user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
 			UserID:   discordUser.ID,
 			Email:    discordUser.Email,
 			Username: discordUser.Username,
@@ -493,7 +493,7 @@ func DiscordAuth(c *gin.Context) {
 		}
 	}
 
-	session, err := database.Queries.InsertSession(c, sqlc.InsertSessionParams{
+	session, err := database.Db.Queries.InsertSession(c, sqlc.InsertSessionParams{
 		SessionID:    gonanoid.Must(),
 		UserID:       user.UserID,
 		Type:         sqlc.SessionTypeDISCORD,
@@ -527,7 +527,7 @@ func Logout(c *gin.Context) {
 		return
 	}
 
-	err = database.Queries.DeleteSession(c, sessionId)
+	err = database.Db.Queries.DeleteSession(c, sessionId)
 	if err != nil {
 		message := gin.H{
 			"message": "unable to execute query: DeleteSession",
@@ -543,7 +543,7 @@ func Logout(c *gin.Context) {
 }
 
 func GetAllSessions(c *gin.Context) {
-	sessions, err := database.Queries.GetAllSessions(c)
+	sessions, err := database.Db.Queries.GetAllSessions(c)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

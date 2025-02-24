@@ -9,9 +9,17 @@ where user_id = $1;
 select * from users
 where email = $1;
 
--- name: InsertUser :one
-insert into users (user_id, email, username) values (
-    $1,
-    $2,
-    $3
-) returning *;
+-- name: CreateUser :one
+insert into users (user_id, email, username)
+values ($1,$2,$3)
+returning *;
+
+-- name: UpdateUser :one
+update users
+set email = $1, username = $2
+where user_id = $3
+returning *;
+
+-- name: DeleteUser :exec
+delete from users
+where user_id = $1;

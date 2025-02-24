@@ -3,23 +3,33 @@ package controllers
 import (
 	"calenduh-backend/internal/database"
 	"calenduh-backend/internal/sqlc"
-	"database/sql"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"net/http"
 )
 
-func FetchCalendar(c *gin.Context) {
+func GetAllCalendars(c *gin.Context) {
+	calendars, err := database.Db.Queries.GetAllCalendars(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, calendars)
+}
+
+func GetCalendar(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
 	calendarId := c.Param("calendar_id")
 	if calendarId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
 		return
 	}
 
-	calendar, err := database.Queries.GetCalendarById(c, calendarId)
+	calendar, err := database.Db.Queries.GetCalendarById(c, calendarId)
 	if err != nil {
 		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		case errors.Is(err, pgx.ErrNoRows):
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "calendar not found"})
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -30,11 +40,11 @@ func FetchCalendar(c *gin.Context) {
 	c.JSON(http.StatusOK, calendar)
 }
 
-func FetchUserCalendars(c *gin.Context, user *sqlc.User) {
-	calendars, err := database.Queries.GetCalendarsByUserId(c, &user.UserID)
+func GetUserCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
+	calendars, err := database.Db.Queries.GetCalendarsByUserId(c, &user.UserID)
 	if err != nil {
 		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		case errors.Is(err, pgx.ErrNoRows):
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "no calendars found"})
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -45,63 +55,45 @@ func FetchUserCalendars(c *gin.Context, user *sqlc.User) {
 	c.JSON(http.StatusOK, calendars)
 }
 
-func FetchGroupCalendars(c *gin.Context, user *sqlc.User) {
-
+func GetGroupCalendars(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
+	// ToDo
 }
 
-func FetchSubscribedCalendars(c *gin.Context) {
+func GetSubscribedCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
+	calendars, err := database.Db.Queries.GetSubscribedCalendars(c, user.UserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "no calendars found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
 
+	c.JSON(http.StatusOK, calendars)
 }
 
-func CreateCalendar(c *gin.Context) {
+func CreateUserCalendar(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	var input sqlc.CreateCalendarParams
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input" + err.Error()})
 		return
 	}
 
-	err := database.Queries.CreateCalendar(c, input)
+	input.CalendarID = gonanoid.Must()
+	input.UserID = &user.UserID
+
+	calendar, err := database.Db.Queries.CreateCalendar(c, input)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to create calendar" + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "calendar created successfully"})
+	c.JSON(http.StatusOK, calendar)
 }
 
-func DeleteCalendar(c *gin.Context) {
-	calendarId := c.Param("calendar_id")
-	if calendarId == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
-		return
-	}
-
-	err := database.Queries.DeleteCalendar(c, calendarId)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to delete calendar" + err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"status": "calendar deleted successfully"})
-}
-
-func DeleteAllUserCalendars(c *gin.Context) {
-	userId := c.Param("user_id")
-	if userId == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
-		return
-	}
-
-	err := database.Queries.DeleteAllUserCalendars(c, &userId)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to delete calendars" + err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"status": "calendars deleted successfully"})
-}
-
-func UpdateCalendar(c *gin.Context) {
+func UpdateCalendar(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 	calendarId := c.Param("calendar_id")
 	if calendarId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
@@ -116,11 +108,77 @@ func UpdateCalendar(c *gin.Context) {
 
 	input.CalendarID = calendarId
 
-	err := database.Queries.UpdateCalendar(c, input)
+	calendar, err := database.Db.Queries.GetCalendarById(c, input.CalendarID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to update calendar" + err.Error()})
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "calendar not found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "calendar updated successfully"})
+	if !CanEditCalendar(calendar, user.UserID, groups) {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	calendar, err = database.Db.Queries.UpdateCalendar(c, input)
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, calendar)
+}
+
+func DeleteCalendar(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
+	calendarId := c.Param("calendar_id")
+	if calendarId == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
+		return
+	}
+
+	calendar, err := database.Db.Queries.GetCalendarById(c, calendarId)
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "calendar not found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	if !CanEditCalendar(calendar, user.UserID, groups) {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	if err = database.Db.Queries.DeleteCalendar(c, calendarId); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to delete calendar" + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "calendar deleted successfully"})
+}
+
+func CanEditCalendar(calendar sqlc.Calendar, userId string, groups []sqlc.Group) bool {
+	if *calendar.UserID == userId {
+		return true
+	} else {
+		for _, group := range groups {
+			if *calendar.GroupID == group.GroupID {
+				return true
+			}
+		}
+	}
+
+	return false
 }

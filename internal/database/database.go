@@ -3,12 +3,11 @@ package database
 import (
 	"calenduh-backend/internal/sqlc"
 	"context"
-
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"log"
-	// "github.com/lib/pq"
 
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type TransactionFunc func(queries *sqlc.Queries) error
 
 type Database struct {
 	Conn    *sql.DB
@@ -24,7 +24,7 @@ type Database struct {
 	Pool    *pgxpool.Pool
 }
 
-var Queries *sqlc.Queries
+var Db *Database
 
 func Migrate(db *sql.DB) {
 	// Initialize postgres migration driver
@@ -46,7 +46,7 @@ func Migrate(db *sql.DB) {
 	}
 }
 
-func New(connectionString string) (*Database, error) {
+func New(connectionString string) error {
 	var db *sql.DB
 	var err error
 	iterations := 0
@@ -74,15 +74,34 @@ func New(connectionString string) (*Database, error) {
 
 	pool, err := pgxpool.New(context.Background(), connectionString)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database with pgx: %w", err)
+		return fmt.Errorf("failed to connect to database with pgx: %w", err)
 	}
 
-	Queries = sqlc.New(pool)
+	queries := sqlc.New(pool)
 
 	// Migrate DB
 	Migrate(db)
 
-	return &Database{
-		db, Queries, pool,
-	}, nil
+	Db = &Database{db, queries, pool}
+	return nil
+}
+
+func Transaction(ctx context.Context, next TransactionFunc) error {
+	transaction, err := Db.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer func(transaction pgx.Tx, ctx context.Context) {
+		if err := transaction.Rollback(ctx); err != nil {
+			log.Fatal("could not rollback transaction:", err)
+		}
+	}(transaction, ctx)
+	queries := Db.Queries.WithTx(transaction)
+
+	if err := next(queries); err != nil {
+		return nil
+	} else {
+		return transaction.Commit(ctx)
+	}
 }
