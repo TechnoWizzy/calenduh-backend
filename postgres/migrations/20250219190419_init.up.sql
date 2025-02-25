@@ -37,16 +37,16 @@ create table calendars (
 );
 
 create table events (
-                        event_id text primary key,
-                        calendar_id text not null references calendars(calendar_id) on delete cascade on update cascade,
-                        name text not null,
-                        location text,
-                        description text,
-                        notification text,
-                        frequency int,
-                        priority int,
-                        start_time timestamp(3),
-                        end_time timestamp(3)
+    event_id text primary key,
+    calendar_id text not null references calendars(calendar_id) on delete cascade on update cascade,
+    name text not null,
+    location text,
+    description text,
+    notification text,
+    frequency int,
+    priority int,
+    start_time timestamp(3),
+    end_time timestamp(3)
 );
 
 create table subscriptions (

@@ -24,4 +24,4 @@ migration:
 	migrate create -ext sql -dir $(POSTGRES_DIR) $$name
 
 clean-db:
-	docker compose -f $(CONFIG) down --volumes
+	docker compose -f $(CONFIG) down -v

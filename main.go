@@ -48,7 +48,7 @@ func main() {
 	// Router setup
 	router := gin.Default()
 	router.Use(gin.Recovery())
-	router.Use(controllers.Authorize)
+	router.Use(util.GlobalRateLimit, controllers.Authorize)
 	router.GET("/health", func(c *gin.Context) {
 		uptime := time.Since(timeStarted).Truncate(time.Second)
 		message := gin.H{

@@ -42,7 +42,7 @@ func GetGroup(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
 	c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "group not found or not permissible"})
 }
 
-func CreateGroup(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
+func CreateGroup(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	if err := database.Transaction(c, func(queries *sqlc.Queries) error {
 		var input sqlc.CreateGroupParams
 		if err := c.BindJSON(&input); err != nil {
