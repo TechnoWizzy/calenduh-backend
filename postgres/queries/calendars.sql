@@ -35,5 +35,5 @@ WHERE user_id = $1;
 -- name: UpdateCalendar :one
 update calendars
 set title = $1, is_public = $2, user_id = $3, group_id = $4, color = $5
-where calendar_id = $5
+where calendar_id = $6
 returning *;
