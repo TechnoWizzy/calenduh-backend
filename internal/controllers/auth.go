@@ -86,6 +86,7 @@ func Authorize(c *gin.Context) {
 		return
 	}
 
+	log.Println("Session ID: ", sessionId)
 	session, err := database.Db.Queries.GetSessionById(c, sessionId)
 	if err != nil {
 		c.Next()
@@ -97,6 +98,7 @@ func Authorize(c *gin.Context) {
 		c.Next()
 		return
 	}
+	log.Println("User ID: ", user.UserID)
 
 	c.Set("user", &user)
 	c.Next()

@@ -66,6 +66,7 @@ func ValidateNonce(code string) (bool, *string) {
 }
 
 func GetClientId(c *gin.Context) string {
+	log.Println("Host: " + c.Request.Host)
 	clientId, err := c.Cookie("client_id")
 	if err != nil {
 		clientId, err = gonanoid.New()
