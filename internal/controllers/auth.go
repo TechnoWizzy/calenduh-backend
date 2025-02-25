@@ -80,14 +80,12 @@ type DiscordUser struct {
 // Authorize is middleware that checks the login status of the current request.
 // If a user is on an active session their ID is attached to the request under user_id.
 func Authorize(c *gin.Context) {
-	log.Println("Cookie: " + c.GetHeader("Cookie"))
 	sessionId, err := c.Cookie("sessionId")
 	if err != nil { // No session
 		c.Next()
 		return
 	}
 
-	log.Println("Session ID: ", sessionId)
 	session, err := database.Db.Queries.GetSessionById(c, sessionId)
 	if err != nil {
 		c.Next()
@@ -99,7 +97,6 @@ func Authorize(c *gin.Context) {
 		c.Next()
 		return
 	}
-	log.Println("User ID: ", user.UserID)
 
 	c.Set("user", &user)
 	c.Next()
