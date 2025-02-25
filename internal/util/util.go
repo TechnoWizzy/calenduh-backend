@@ -72,7 +72,7 @@ func GetClientId(c *gin.Context) string {
 		if err != nil {
 			clientId = uuid.New().String()
 		}
-		c.SetCookie("client_id", clientId, 1<<32-1, "/", c.Request.URL.String(), true, true)
+		c.SetCookie("client_id", clientId, 1<<32-1, "/", c.Request.Host, true, true)
 	}
 
 	DailyUsers.Set(clientId, true, TimeToMidnightEST())
