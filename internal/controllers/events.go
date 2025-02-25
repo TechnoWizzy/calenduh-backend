@@ -82,7 +82,7 @@ func CreateEvent(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 
 	var input sqlc.CreateEventParams
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input" + err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input: " + err.Error()})
 		return
 	}
 

@@ -93,7 +93,7 @@ func GetSubscribedCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 func CreateUserCalendar(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	var input sqlc.CreateCalendarParams
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input" + err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input: " + err.Error()})
 		return
 	}
 
@@ -118,7 +118,7 @@ func CreateGroupCalendar(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
 
 	var input sqlc.CreateCalendarParams
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input" + err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input: " + err.Error()})
 		return
 	}
 
@@ -148,7 +148,7 @@ func UpdateCalendar(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 
 	var input sqlc.UpdateCalendarParams
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input" + err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input: " + err.Error()})
 		return
 	}
 
