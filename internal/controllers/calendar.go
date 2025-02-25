@@ -153,6 +153,7 @@ func UpdateCalendar(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 	}
 
 	input.CalendarID = calendarId
+	input.UserID = &user.UserID
 
 	calendar, err := database.Db.Queries.GetCalendarById(c, input.CalendarID)
 	if err != nil {
