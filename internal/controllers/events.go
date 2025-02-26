@@ -262,8 +262,8 @@ func WithRange(c *gin.Context) {
 	endStr := c.Query("end")
 
 	// Initialize start and end times with min and max values
-	minTime := time.Unix(0, 0)           // 1970-01-01 00:00:00 UTC
-	maxTime := time.Unix(1<<62, 0).UTC() // Max time in Go
+	minTime := time.UnixMilli(0)       // 1970-01-01 00:00:00 UTC
+	maxTime := time.UnixMilli(1 << 62) // huge time
 
 	start := minTime
 	end := maxTime
