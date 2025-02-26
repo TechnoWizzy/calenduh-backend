@@ -262,8 +262,8 @@ func WithRange(c *gin.Context) {
 	endStr := c.Query("end")
 
 	// Initialize start and end times with min and max values
-	minTime := time.Unix(0, 0)             // 1970-01-01 00:00:00 UTC
-	maxTime := time.Unix(1<<63-1, 0).UTC() // Max time in Go
+	minTime := time.Unix(0, 0)           // 1970-01-01 00:00:00 UTC
+	maxTime := time.Unix(1<<62, 0).UTC() // Max time in Go
 
 	start := minTime
 	end := maxTime
@@ -299,7 +299,7 @@ func ParseRange(c *gin.Context) (*time.Time, *time.Time) {
 	end := c.GetTime("end")
 
 	if start.After(end) {
-		panic("start time must be after end time")
+		panic("start time must be before end time")
 	}
 
 	return &start, &end
