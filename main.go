@@ -102,37 +102,38 @@ func setupRoutes(router *gin.Engine) {
 	}
 	{ // Users
 		users.GET("/", controllers.GetAllUsers)                              // Get all users
-		users.GET("/@me", controllers.LoggedIn(controllers.GetMe))           // Get self user
-		users.GET("/:user_id", controllers.LoggedIn(controllers.GetUser))    // Get a specific user
-		users.PUT("/:user_id", controllers.LoggedIn(controllers.UpdateUser)) // Update user details
-		users.DELETE("/", controllers.LoggedIn(controllers.DeleteMe))        // Delete self user
+		users.GET("/@me", controllers.LoggedIn, controllers.GetMe)           // Get self user
+		users.GET("/:user_id", controllers.LoggedIn, controllers.GetUser)    // Get a specific user
+		users.PUT("/:user_id", controllers.LoggedIn, controllers.UpdateUser) // Update user details
+		users.DELETE("/", controllers.LoggedIn, controllers.DeleteMe)        // Delete self user
 		users.DELETE("/:user_id", controllers.DeleteUser)                    // Delete user by id
 	}
 	{ // Events
-		events.GET("/", controllers.GetAllEvents)                                               // List all events
-		events.GET("/:calendar_id", controllers.LoggedIn(controllers.GetCalendarEvents))        // Get Calendar events
-		events.GET("/:calendar_id/:event_id", controllers.LoggedIn(controllers.GetEvent))       // Get a specific event
-		events.POST("/:calendar_id", controllers.LoggedIn(controllers.CreateEvent))             // Create a new event
-		events.PUT("/:calendar_id/:event_id", controllers.LoggedIn(controllers.UpdateEvent))    // Update an event
-		events.DELETE("/:calendar_id/:event_id", controllers.LoggedIn(controllers.DeleteEvent)) // Delete an event
+		events.GET("/", controllers.WithRange, controllers.GetAllEvents)                                         // List all events
+		events.GET("/@me", controllers.WithRange, controllers.LoggedIn, controllers.GetUserEvents)               // Get all events for a user that start today
+		events.GET("/:calendar_id", controllers.WithRange, controllers.LoggedIn, controllers.GetCalendarEvents)  // Get Calendar events
+		events.GET("/:calendar_id/:event_id", controllers.WithRange, controllers.LoggedIn, controllers.GetEvent) // Get a specific event
+		events.POST("/:calendar_id", controllers.LoggedIn, controllers.CreateEvent)                              // Create a new event
+		events.PUT("/:calendar_id/:event_id", controllers.LoggedIn, controllers.UpdateEvent)                     // Update an event
+		events.DELETE("/:calendar_id/:event_id", controllers.LoggedIn, controllers.DeleteEvent)                  // Delete an event
 	}
 	{ // Groups
 		groups.GET("/", controllers.GetAllGroups)                                  // List all groups
-		groups.GET("/:group_id", controllers.LoggedIn(controllers.GetGroup))       // Get a specific group
-		groups.POST("/", controllers.LoggedIn(controllers.CreateGroup))            // Create a new group
-		groups.PUT("/:group_id", controllers.LoggedIn(controllers.UpdateGroup))    // Update a group
-		groups.DELETE("/:group_id", controllers.LoggedIn(controllers.DeleteGroup)) // Delete a group
+		groups.GET("/:group_id", controllers.LoggedIn, controllers.GetGroup)       // Get a specific group
+		groups.POST("/", controllers.LoggedIn, controllers.CreateGroup)            // Create a new group
+		groups.PUT("/:group_id", controllers.LoggedIn, controllers.UpdateGroup)    // Update a group
+		groups.DELETE("/:group_id", controllers.LoggedIn, controllers.DeleteGroup) // Delete a group
 	}
 	{ // Calendars
 		calendars.GET("/", controllers.GetAllCalendars)                                         // List all calendars
-		calendars.GET("/@me", controllers.LoggedIn(controllers.GetUserCalendars))               // List all calendars owned by user
-		calendars.GET("/@groups", controllers.LoggedIn(controllers.GetGroupCalendars))          // List all calendars owned by user groups
-		calendars.GET("/@subscribed", controllers.LoggedIn(controllers.GetSubscribedCalendars)) // List all the calendars subscribed to by user
-		calendars.GET("/:calendar_id", controllers.LoggedIn(controllers.GetCalendar))           // Get a specific calendar
-		calendars.POST("/", controllers.LoggedIn(controllers.CreateUserCalendar))               // Create a new user calendar
-		calendars.POST("/:group_id", controllers.LoggedIn(controllers.CreateGroupCalendar))     // Create a new group calendar
-		calendars.PUT("/:calendar_id", controllers.LoggedIn(controllers.UpdateCalendar))        // Update a calendar
-		calendars.DELETE("/:calendar_id", controllers.LoggedIn(controllers.DeleteCalendar))     // Delete a calendar
+		calendars.GET("/@me", controllers.LoggedIn, controllers.GetUserCalendars)               // List all calendars owned by user
+		calendars.GET("/@groups", controllers.LoggedIn, controllers.GetGroupCalendars)          // List all calendars owned by user groups
+		calendars.GET("/@subscribed", controllers.LoggedIn, controllers.GetSubscribedCalendars) // List all the calendars subscribed to by user
+		calendars.GET("/:calendar_id", controllers.LoggedIn, controllers.GetCalendar)           // Get a specific calendar
+		calendars.POST("/", controllers.LoggedIn, controllers.CreateUserCalendar)               // Create a new user calendar
+		calendars.POST("/:group_id", controllers.LoggedIn, controllers.CreateGroupCalendar)     // Create a new group calendar
+		calendars.PUT("/:calendar_id", controllers.LoggedIn, controllers.UpdateCalendar)        // Update a calendar
+		calendars.DELETE("/:calendar_id", controllers.LoggedIn, controllers.DeleteCalendar)     // Delete a calendar
 	}
 	{ // Subscriptions
 		//subscriptions.GET("/", controllers.GetAllSubscriptions)                        // List all subscriptions

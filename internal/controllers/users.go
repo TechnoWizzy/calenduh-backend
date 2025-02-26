@@ -12,7 +12,8 @@ import (
 // GetMe
 // @Summary Get details of the current user
 // @Description Fetches the user data for the currently authenticated user.
-func GetMe(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
+func GetMe(c *gin.Context) {
+	user := *ParseUser(c)
 	c.PureJSON(http.StatusOK, user)
 }
 
@@ -37,7 +38,7 @@ func GetAllUsers(c *gin.Context) {
 // GetUser
 // @Summary Gets a User by ID
 // @Description Used to retrieve user details for an account other than the one logged in
-func GetUser(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
+func GetUser(c *gin.Context) {
 	userId := c.Param("user_id")
 	if userId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
@@ -58,7 +59,9 @@ func GetUser(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
 	c.PureJSON(http.StatusOK, user)
 }
 
-func UpdateUser(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
+func UpdateUser(c *gin.Context) {
+	user := *ParseUser(c)
+
 	var updateUserParams sqlc.UpdateUserParams
 	if err := c.ShouldBindJSON(&updateUserParams); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -75,7 +78,8 @@ func UpdateUser(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	}
 }
 
-func DeleteMe(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
+func DeleteMe(c *gin.Context) {
+	user := *ParseUser(c)
 	if err := database.Db.Queries.DeleteUser(c, user.UserID); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -102,4 +106,16 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	c.PureJSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+func ParseUser(c *gin.Context) *sqlc.User {
+	v, found := c.Get("user")
+	if !found {
+		panic(errors.New("user not found"))
+	}
+	user, ok := v.(*sqlc.User)
+	if !ok {
+		panic(errors.New("user type assertion failed"))
+	}
+	return user
 }

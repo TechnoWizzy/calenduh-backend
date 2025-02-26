@@ -25,7 +25,8 @@ func GetAllGroups(c *gin.Context) {
 	c.JSON(http.StatusOK, groups)
 }
 
-func GetGroup(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
+func GetGroup(c *gin.Context) {
+	groups := *ParseGroups(c)
 	groupId := c.Param("group_id")
 	if groupId == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "group_id is required"})
@@ -42,7 +43,8 @@ func GetGroup(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
 	c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "group not found or not permissible"})
 }
 
-func CreateGroup(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
+func CreateGroup(c *gin.Context) {
+	user := *ParseUser(c)
 	if err := database.Transaction(c, func(queries *sqlc.Queries) error {
 		var input sqlc.CreateGroupParams
 		if err := c.BindJSON(&input); err != nil {
@@ -74,7 +76,8 @@ func CreateGroup(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	}
 }
 
-func UpdateGroup(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
+func UpdateGroup(c *gin.Context) {
+	groups := *ParseGroups(c)
 	var input sqlc.UpdateGroupParams
 	if err := c.BindJSON(&input); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -103,7 +106,8 @@ func UpdateGroup(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
 	c.JSON(http.StatusOK, group)
 }
 
-func DeleteGroup(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
+func DeleteGroup(c *gin.Context) {
+	groups := *ParseGroups(c)
 	groupId := c.Param("group_id")
 	if groupId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "group_id is required"})
@@ -126,6 +130,19 @@ func DeleteGroup(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+func ParseGroups(c *gin.Context) *[]sqlc.Group {
+	v, found := c.Get("groups")
+	if !found {
+		panic(errors.New("groups not found"))
+	}
+	groups, ok := v.(*[]sqlc.Group)
+	if !ok {
+		panic(errors.New("groups type assertion failed"))
+	}
+
+	return groups
 }
 
 func CanEditGroup(groupId string, groups []sqlc.Group) bool {

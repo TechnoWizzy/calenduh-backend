@@ -25,7 +25,7 @@ func GetAllCalendars(c *gin.Context) {
 	c.JSON(http.StatusOK, calendars)
 }
 
-func GetCalendar(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
+func GetCalendar(c *gin.Context) {
 	calendarId := c.Param("calendar_id")
 	if calendarId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
@@ -46,7 +46,8 @@ func GetCalendar(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
 	c.JSON(http.StatusOK, calendar)
 }
 
-func GetUserCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
+func GetUserCalendars(c *gin.Context) {
+	user := *ParseUser(c)
 	calendars, err := database.Db.Queries.GetCalendarsByUserId(c, &user.UserID)
 	if err != nil {
 		switch {
@@ -61,7 +62,8 @@ func GetUserCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	c.JSON(http.StatusOK, calendars)
 }
 
-func GetGroupCalendars(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
+func GetGroupCalendars(c *gin.Context) {
+	groups := *ParseGroups(c)
 	calendars := make([]sqlc.Calendar, 0)
 	for _, group := range groups {
 		groupCalendars, err := database.Db.Queries.GetCalendarsByUserId(c, &group.GroupID)
@@ -75,7 +77,8 @@ func GetGroupCalendars(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
 	c.JSON(http.StatusOK, calendars)
 }
 
-func GetSubscribedCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
+func GetSubscribedCalendars(c *gin.Context) {
+	user := *ParseUser(c)
 	calendars, err := database.Db.Queries.GetSubscribedCalendars(c, user.UserID)
 	if err != nil {
 		switch {
@@ -90,7 +93,8 @@ func GetSubscribedCalendars(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	c.JSON(http.StatusOK, calendars)
 }
 
-func CreateUserCalendar(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
+func CreateUserCalendar(c *gin.Context) {
+	user := *ParseUser(c)
 	var input sqlc.CreateCalendarParams
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid input: " + err.Error()})
@@ -109,7 +113,8 @@ func CreateUserCalendar(c *gin.Context, user sqlc.User, _ []sqlc.Group) {
 	c.JSON(http.StatusOK, calendar)
 }
 
-func CreateGroupCalendar(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
+func CreateGroupCalendar(c *gin.Context) {
+	groups := *ParseGroups(c)
 	groupId := c.Param("group_id")
 	if groupId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "group_id is required"})
@@ -139,7 +144,9 @@ func CreateGroupCalendar(c *gin.Context, _ sqlc.User, groups []sqlc.Group) {
 	c.JSON(http.StatusOK, calendar)
 }
 
-func UpdateCalendar(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
+func UpdateCalendar(c *gin.Context) {
+	user := *ParseUser(c)
+	groups := *ParseGroups(c)
 	calendarId := c.Param("calendar_id")
 	if calendarId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
@@ -185,7 +192,9 @@ func UpdateCalendar(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 	c.JSON(http.StatusOK, calendar)
 }
 
-func DeleteCalendar(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
+func DeleteCalendar(c *gin.Context) {
+	user := *ParseUser(c)
+	groups := *ParseGroups(c)
 	calendarId := c.Param("calendar_id")
 	if calendarId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})

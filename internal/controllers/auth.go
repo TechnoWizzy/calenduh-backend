@@ -24,8 +24,6 @@ import (
 	"time"
 )
 
-type LoggedInFunc func(*gin.Context, sqlc.User, []sqlc.Group)
-
 type AppleLoginBody struct {
 	AuthorizationCode string  `json:"authorizationCode"`
 	IdentityToken     string  `json:"identityToken"`
@@ -103,22 +101,22 @@ func Authorize(c *gin.Context) {
 	return
 }
 
-func LoggedIn(next LoggedInFunc) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		v, found := c.Get("user")
-		if !found {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "You are not logged in"})
+func LoggedIn(c *gin.Context) {
+	defer func() {
+		if err := recover(); err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "not logged in"})
 			return
 		}
+	}()
 
-		user := v.(*sqlc.User)
-		groups, err := database.Db.Queries.GetGroupsByUserId(c, user.UserID)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "unable to fetch groups: " + err.Error()})
-			return
-		}
-		next(c, *user, groups)
+	user := *ParseUser(c)
+	groups, err := database.Db.Queries.GetGroupsByUserId(c, user.UserID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "unable to fetch groups: " + err.Error()})
+		return
 	}
+
+	c.Set("groups", &groups)
 }
 
 // AppleLogin

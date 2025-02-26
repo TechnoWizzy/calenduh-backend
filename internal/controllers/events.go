@@ -8,10 +8,16 @@ import (
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 func GetAllEvents(c *gin.Context) {
-	events, err := database.Db.Queries.GetAllEvents(c)
+	start, end := ParseRange(c)
+	events, err := database.Db.Queries.GetAllEvents(c, sqlc.GetAllEventsParams{
+		StartTime: *start,
+		EndTime:   *end,
+	})
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
@@ -25,7 +31,28 @@ func GetAllEvents(c *gin.Context) {
 	c.JSON(http.StatusOK, events)
 }
 
-func GetEvent(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
+func GetUserEvents(c *gin.Context) {
+	user := *ParseUser(c)
+	start, end := ParseRange(c)
+	events, err := database.Db.Queries.GetEventsByUserId(c, sqlc.GetEventsByUserIdParams{
+		UserID:    user.UserID,
+		StartTime: *start,
+		EndTime:   *end,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.JSON(http.StatusOK, make([]sqlc.Event, 0))
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, events)
+}
+
+func GetEvent(c *gin.Context) {
 	calendarId := c.Param("calendar_id")
 	eventId := c.Param("event_id")
 
@@ -52,14 +79,19 @@ func GetEvent(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
 	c.JSON(http.StatusOK, event)
 }
 
-func GetCalendarEvents(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
+func GetCalendarEvents(c *gin.Context) {
+	start, end := ParseRange(c)
 	calendarId := c.Param("calendar_id")
 	if calendarId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
 		return
 	}
 
-	events, err := database.Db.Queries.GetEventByCalendarId(c, calendarId)
+	events, err := database.Db.Queries.GetEventByCalendarId(c, sqlc.GetEventByCalendarIdParams{
+		CalendarID: calendarId,
+		StartTime:  *start,
+		EndTime:    *end,
+	})
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
@@ -73,7 +105,9 @@ func GetCalendarEvents(c *gin.Context, _ sqlc.User, _ []sqlc.Group) {
 	c.JSON(http.StatusOK, events)
 }
 
-func CreateEvent(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
+func CreateEvent(c *gin.Context) {
+	user := *ParseUser(c)
+	groups := *ParseGroups(c)
 	calendarId := c.Param("calendar_id")
 	if calendarId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
@@ -119,7 +153,9 @@ func CreateEvent(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 	c.JSON(http.StatusOK, event)
 }
 
-func UpdateEvent(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
+func UpdateEvent(c *gin.Context) {
+	user := *ParseUser(c)
+	groups := *ParseGroups(c)
 	calendarId := c.Param("calendar_id")
 	eventId := c.Param("event_id")
 
@@ -171,7 +207,9 @@ func UpdateEvent(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 	c.JSON(http.StatusOK, event)
 }
 
-func DeleteEvent(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
+func DeleteEvent(c *gin.Context) {
+	user := *ParseUser(c)
+	groups := *ParseGroups(c)
 	calendarId := c.Param("calendar_id")
 	eventId := c.Param("event_id")
 
@@ -216,4 +254,53 @@ func DeleteEvent(c *gin.Context, user sqlc.User, groups []sqlc.Group) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "event deleted successfully"})
+}
+
+func WithRange(c *gin.Context) {
+	// Get start and end from query parameters
+	startStr := c.Query("start")
+	endStr := c.Query("end")
+
+	// Initialize start and end times with min and max values
+	minTime := time.Unix(0, 0)             // 1970-01-01 00:00:00 UTC
+	maxTime := time.Unix(1<<63-1, 0).UTC() // Max time in Go
+
+	start := minTime
+	end := maxTime
+
+	// Parse start time if provided
+	if startStr != "" {
+		startMs, err := strconv.ParseInt(startStr, 10, 64)
+		if err == nil {
+			startTime := time.UnixMilli(startMs)
+			start = startTime
+		} else {
+			panic(err.Error())
+		}
+	}
+
+	// Parse end time if provided
+	if endStr != "" {
+		endMs, err := strconv.ParseInt(endStr, 10, 64)
+		if err == nil {
+			endTime := time.UnixMilli(endMs)
+			end = endTime
+		} else {
+			panic(err.Error())
+		}
+	}
+
+	c.Set("start", start)
+	c.Set("end", end)
+}
+
+func ParseRange(c *gin.Context) (*time.Time, *time.Time) {
+	start := c.GetTime("start")
+	end := c.GetTime("end")
+
+	if start.After(end) {
+		panic("start time must be after end time")
+	}
+
+	return &start, &end
 }
