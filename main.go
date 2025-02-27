@@ -105,7 +105,7 @@ func setupRoutes(router *gin.Engine) {
 		users.GET("/@me", controllers.LoggedIn, controllers.GetMe)           // Get self user
 		users.GET("/:user_id", controllers.LoggedIn, controllers.GetUser)    // Get a specific user
 		users.PUT("/:user_id", controllers.LoggedIn, controllers.UpdateUser) // Update user details
-		users.DELETE("/", controllers.LoggedIn, controllers.DeleteMe)        // Delete self user
+		users.DELETE("/@me", controllers.LoggedIn, controllers.DeleteMe)     // Delete self user
 		users.DELETE("/:user_id", controllers.DeleteUser)                    // Delete user by id
 	}
 	{ // Events
