@@ -263,7 +263,7 @@ func WithRange(c *gin.Context) {
 
 	// Initialize start and end times with min and max values
 	minTime := time.UnixMilli(0)       // 1970-01-01 00:00:00 UTC
-	maxTime := time.UnixMilli(1 << 62) // huge time
+	maxTime := time.UnixMilli(1 << 56) // huge time
 
 	start := minTime
 	end := maxTime
@@ -275,7 +275,7 @@ func WithRange(c *gin.Context) {
 			startTime := time.UnixMilli(startMs)
 			start = startTime
 		} else {
-			panic(err.Error())
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 	}
 
@@ -286,7 +286,7 @@ func WithRange(c *gin.Context) {
 			endTime := time.UnixMilli(endMs)
 			end = endTime
 		} else {
-			panic(err.Error())
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 	}
 
