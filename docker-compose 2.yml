@@ -1,0 +1,37 @@
+volumes:
+  cache:
+    driver: local
+  database:
+    driver: local
+
+services:
+  calenduh-db:
+    container_name: calenduh-db
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - database:/var/lib/postgresql/data
+
+  calenduh-api:
+    container_name: calenduh-api
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - cache:/var/lib/cache
+    depends_on:
+      - calenduh-db
+
+networks:
+  default:
+    name: network
+    driver: bridge
