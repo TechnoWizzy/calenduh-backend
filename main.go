@@ -4,7 +4,6 @@ import (
 	"calenduh-backend/internal/controllers"
 	"calenduh-backend/internal/database"
 	"calenduh-backend/internal/util"
-	// "calenduh-backend/internal/handlers"
 	"fmt"
 	"github.com/joho/godotenv"
 	"log"
@@ -101,12 +100,13 @@ func setupRoutes(router *gin.Engine) {
 		authentication.GET("/sessions", controllers.GetAllSessions)
 	}
 	{ // Users
-		users.GET("/", controllers.GetAllUsers)                              // Get all users
-		users.GET("/@me", controllers.LoggedIn, controllers.GetMe)           // Get self user
-		users.GET("/:user_id", controllers.LoggedIn, controllers.GetUser)    // Get a specific user
-		users.PUT("/:user_id", controllers.LoggedIn, controllers.UpdateUser) // Update user details
-		users.DELETE("/@me", controllers.LoggedIn, controllers.DeleteMe)     // Delete self user
-		users.DELETE("/:user_id", controllers.DeleteUser)                    // Delete user by id
+		users.GET("/", controllers.GetAllUsers)                                       // Get all users
+		users.GET("/@me", controllers.LoggedIn, controllers.GetMe)                    // Get self user
+		users.GET("/:user_id", controllers.LoggedIn, controllers.GetUser)             // Get a specific user
+		users.PUT("/:user_id", controllers.LoggedIn, controllers.UpdateUser)          // Update user details
+		users.POST("/@local", controllers.LoggedIn, controllers.UploadLocalCalendars) // Upload local user calendars and events
+		users.DELETE("/@me", controllers.LoggedIn, controllers.DeleteMe)              // Delete self user
+		users.DELETE("/:user_id", controllers.DeleteUser)                             // Delete user by id
 	}
 	{ // Events
 		events.GET("/", controllers.WithRange, controllers.GetAllEvents)                                         // List all events

@@ -9,6 +9,11 @@ import (
 	"net/http"
 )
 
+type UploadLocalCalendarsParams struct {
+	Calendars []sqlc.CreateCalendarParams `json:"calendars"`
+	Events    []sqlc.CreateEventParams    `json:"events"`
+}
+
 // GetMe
 // @Summary Get details of the current user
 // @Description Fetches the user data for the currently authenticated user.
@@ -106,6 +111,37 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	c.PureJSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+func UploadLocalCalendars(c *gin.Context) {
+	user := *ParseUser(c)
+	var input UploadLocalCalendarsParams
+	if err := c.BindJSON(&input); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := database.Transaction(c, func(queries *sqlc.Queries) error {
+		// Calendars first
+		for _, createCalendarParams := range input.Calendars {
+			createCalendarParams.UserID = &user.UserID
+			if _, err := queries.CreateCalendar(c, createCalendarParams); err != nil {
+				return err
+			}
+		}
+
+		// Then Events
+		for _, createEventParams := range input.Events {
+			if _, err := queries.CreateEvent(c, createEventParams); err != nil {
+				return err
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "UploadLocalCalendars successful"})
+		return nil
+	}); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
 }
 
 func ParseUser(c *gin.Context) *sqlc.User {

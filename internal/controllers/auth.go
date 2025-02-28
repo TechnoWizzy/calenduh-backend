@@ -346,7 +346,6 @@ func GoogleAuth(c *gin.Context) {
 	c.SetCookie("sessionId", session.SessionID, tokenData.ExpiresIn, "/",
 		c.Request.Host, false, true)
 
-	log.Print(*redirectUri)
 	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionID)
 }
 
