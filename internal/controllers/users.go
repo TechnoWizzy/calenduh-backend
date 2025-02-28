@@ -126,6 +126,7 @@ func UploadLocalCalendars(c *gin.Context) {
 		for _, createCalendarParams := range input.Calendars {
 			createCalendarParams.UserID = &user.UserID
 			if _, err := queries.CreateCalendar(c, createCalendarParams); err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return err
 			}
 		}
@@ -133,6 +134,7 @@ func UploadLocalCalendars(c *gin.Context) {
 		// Then Events
 		for _, createEventParams := range input.Events {
 			if _, err := queries.CreateEvent(c, createEventParams); err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return err
 			}
 		}
@@ -141,6 +143,7 @@ func UploadLocalCalendars(c *gin.Context) {
 		return nil
 	}); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 }
 

@@ -94,14 +94,16 @@ func Transaction(ctx context.Context, next TransactionFunc) error {
 
 	defer func(transaction pgx.Tx, ctx context.Context) {
 		if err := transaction.Rollback(ctx); err != nil {
-			log.Fatal("could not rollback transaction:", err)
+			log.Println("could not rollback transaction:", err)
 		}
 	}(transaction, ctx)
 	queries := Db.Queries.WithTx(transaction)
 
 	if err := next(queries); err != nil {
+		log.Println("could not execute transaction:", err)
 		return nil
 	} else {
+		log.Println("executed transaction")
 		return transaction.Commit(ctx)
 	}
 }
