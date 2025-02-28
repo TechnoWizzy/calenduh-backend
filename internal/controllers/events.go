@@ -256,6 +256,16 @@ func DeleteEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "event deleted successfully"})
 }
 
+func DeleteAllEvents(c *gin.Context) {
+	err := database.Db.Queries.DeleteAllEvents(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "all events deleted successfully"})
+}
+
 func WithRange(c *gin.Context) {
 	// Get start and end from query parameters
 	startStr := c.Query("start")

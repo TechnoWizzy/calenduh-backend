@@ -23,3 +23,7 @@ returning *;
 -- name: DeleteUser :exec
 delete from users
 where user_id = $1;
+
+-- name: DeleteAllUsers :exec
+delete from users
+where true;

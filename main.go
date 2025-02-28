@@ -106,6 +106,7 @@ func setupRoutes(router *gin.Engine) {
 		users.PUT("/:user_id", controllers.LoggedIn, controllers.UpdateUser)          // Update user details
 		users.POST("/@local", controllers.LoggedIn, controllers.UploadLocalCalendars) // Upload local user calendars and events
 		users.DELETE("/@me", controllers.LoggedIn, controllers.DeleteMe)              // Delete self user
+		users.DELETE("/@all", controllers.DeleteAllUsers)                             // Delete all users
 		users.DELETE("/:user_id", controllers.DeleteUser)                             // Delete user by id
 	}
 	{ // Events
@@ -115,6 +116,7 @@ func setupRoutes(router *gin.Engine) {
 		events.GET("/:calendar_id/:event_id", controllers.WithRange, controllers.LoggedIn, controllers.GetEvent) // Get a specific event
 		events.POST("/:calendar_id", controllers.LoggedIn, controllers.CreateEvent)                              // Create a new event
 		events.PUT("/:calendar_id/:event_id", controllers.LoggedIn, controllers.UpdateEvent)                     // Update an event
+		events.DELETE("/@all", controllers.DeleteAllEvents)                                                      // Delete all events
 		events.DELETE("/:calendar_id/:event_id", controllers.LoggedIn, controllers.DeleteEvent)                  // Delete an event
 	}
 	{ // Groups
@@ -133,6 +135,7 @@ func setupRoutes(router *gin.Engine) {
 		calendars.POST("/", controllers.LoggedIn, controllers.CreateUserCalendar)               // Create a new user calendar
 		calendars.POST("/:group_id", controllers.LoggedIn, controllers.CreateGroupCalendar)     // Create a new group calendar
 		calendars.PUT("/:calendar_id", controllers.LoggedIn, controllers.UpdateCalendar)        // Update a calendar
+		calendars.DELETE("/@all", controllers.DeleteAllCalendars)                               // Delete all calendars
 		calendars.DELETE("/:calendar_id", controllers.LoggedIn, controllers.DeleteCalendar)     // Delete a calendar
 	}
 	{ // Subscriptions

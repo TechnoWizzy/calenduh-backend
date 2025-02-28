@@ -225,6 +225,16 @@ func DeleteCalendar(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "calendar deleted successfully"})
 }
 
+func DeleteAllCalendars(c *gin.Context) {
+	err := database.Db.Queries.DeleteAllCalendars(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "all calendars deleted successfully"})
+}
+
 func CanEditCalendar(calendar sqlc.Calendar, userId string, groups []sqlc.Group) bool {
 	if *calendar.UserID == userId {
 		return true

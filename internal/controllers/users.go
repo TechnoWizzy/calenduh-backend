@@ -113,6 +113,16 @@ func DeleteUser(c *gin.Context) {
 	c.PureJSON(http.StatusOK, gin.H{"status": "deleted"})
 }
 
+func DeleteAllUsers(c *gin.Context) {
+	err := database.Db.Queries.DeleteAllUsers(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "all users deleted successfully"})
+}
+
 func UploadLocalCalendars(c *gin.Context) {
 	user := *ParseUser(c)
 	var input UploadLocalCalendarsParams
