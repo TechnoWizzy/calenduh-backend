@@ -5,6 +5,10 @@ select * from groups;
 select * from groups
 where group_id = $1;
 
+-- name: GetGroupByInviteCode :one
+select * from groups
+where invite_code = $1;
+
 -- name: GetGroupsByUserId :many
 select g.* from users u
 inner join group_members gm on u.user_id = gm.user_id

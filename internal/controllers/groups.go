@@ -76,6 +76,37 @@ func CreateGroup(c *gin.Context) {
 	}
 }
 
+func JoinGroup(c *gin.Context) {
+	user := *ParseUser(c)
+	inviteCode := c.Param("invite_code")
+
+	if inviteCode == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invite_code is required"})
+		return
+	}
+
+	group, err := database.Db.Queries.GetGroupByInviteCode(c, inviteCode)
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	if err = database.Db.Queries.CreateGroupMember(c, sqlc.CreateGroupMemberParams{
+		UserID:  user.UserID,
+		GroupID: group.GroupID,
+	}); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, group)
+}
+
 func UpdateGroup(c *gin.Context) {
 	groups := *ParseGroups(c)
 	var input sqlc.UpdateGroupParams

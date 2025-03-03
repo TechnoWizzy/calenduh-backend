@@ -120,11 +120,12 @@ func setupRoutes(router *gin.Engine) {
 		events.DELETE("/:calendar_id/:event_id", controllers.LoggedIn, controllers.DeleteEvent)                  // Delete an event
 	}
 	{ // Groups
-		groups.GET("/", controllers.GetAllGroups)                                  // List all groups
-		groups.GET("/:group_id", controllers.LoggedIn, controllers.GetGroup)       // Get a specific group
-		groups.POST("/", controllers.LoggedIn, controllers.CreateGroup)            // Create a new group
-		groups.PUT("/:group_id", controllers.LoggedIn, controllers.UpdateGroup)    // Update a group
-		groups.DELETE("/:group_id", controllers.LoggedIn, controllers.DeleteGroup) // Delete a group
+		groups.GET("/", controllers.GetAllGroups)                                      // List all groups
+		groups.GET("/:group_id", controllers.LoggedIn, controllers.GetGroup)           // Get a specific group
+		groups.POST("/join/:invite_code", controllers.LoggedIn, controllers.JoinGroup) // Join a group by code
+		groups.POST("/", controllers.LoggedIn, controllers.CreateGroup)                // Create a new group
+		groups.PUT("/:group_id", controllers.LoggedIn, controllers.UpdateGroup)        // Update a group
+		groups.DELETE("/:group_id", controllers.LoggedIn, controllers.DeleteGroup)     // Delete a group
 	}
 	{ // Calendars
 		calendars.GET("/", controllers.GetAllCalendars)                                         // List all calendars
