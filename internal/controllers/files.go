@@ -22,8 +22,8 @@ func UploadFile(c *gin.Context) {
 		return
 	}
 
-	if !IsValidFileType(file.Header.Get("Content-Type")) {
-		message := gin.H{"message": "File type must be JPEG, PNG, WEBP, SVG/XML, or PDF"}
+	if !isValidFileType(file.Header.Get("Content-Type")) {
+		message := gin.H{"message": "File type must be JPEG, PNG, WEBP"}
 		c.AbortWithStatusJSON(http.StatusUnsupportedMediaType, message)
 		return
 	}
@@ -124,12 +124,11 @@ func deleteFile(key string) error {
 	return nil
 }
 
-func IsValidFileType(fileType string) bool {
+func isValidFileType(fileType string) bool {
 	validFileTypes := []string{
 		"image/jpeg",
 		"image/png",
 		"image/webp",
-		"image/svg+xml",
 	}
 
 	for _, validFileType := range validFileTypes {
