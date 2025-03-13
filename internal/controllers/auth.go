@@ -146,18 +146,27 @@ func AppleLogin(c *gin.Context) {
 		email = token.Claims.(jwt.MapClaims)["email"].(string)
 	}
 
-	user, err := database.Db.Queries.GetUserByEmail(c, email)
+	user, err := database.Db.Queries.GetUserById(c, appleLoginBody.UserId)
+	if err != nil { // If the email exists we need to use that user
+		user, err = database.Db.Queries.GetUserById(c, email)
+	}
 
-	if err != nil { // No user
+	if err != nil { // User does not exist yet
 		if errors.Is(err, pgx.ErrNoRows) {
+			username := strings.Split(email, "@")[0]
+
 			user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
 				UserID:   appleLoginBody.UserId,
 				Email:    email,
-				Username: email,
+				Username: username,
 			})
 
-			if err != nil { // Could not create user
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			if err != nil {
+				message := gin.H{
+					"message": "unable to create new user",
+					"error":   err.Error(),
+				}
+				c.AbortWithStatusJSON(http.StatusInternalServerError, message)
 				return
 			}
 		} else { // Failed to fetch user
@@ -305,22 +314,31 @@ func GoogleAuth(c *gin.Context) {
 		return
 	}
 
-	user, err := database.Db.Queries.GetUserByEmail(c, googleUser.Email)
+	user, err := database.Db.Queries.GetUserById(c, googleUser.ID)
+	if err != nil { // If the email exists we need to use that user
+		user, err = database.Db.Queries.GetUserByEmail(c, googleUser.Email)
+	}
+
 	if err != nil { // User does not exist yet
-		username := strings.Split(googleUser.Email, "@")[0]
+		if errors.Is(err, pgx.ErrNoRows) {
+			username := strings.Split(googleUser.Email, "@")[0]
 
-		user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
-			UserID:   googleUser.ID,
-			Email:    googleUser.Email,
-			Username: username,
-		})
+			user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
+				UserID:   googleUser.ID,
+				Email:    googleUser.Email,
+				Username: username,
+			})
 
-		if err != nil {
-			message := gin.H{
-				"message": "unable to create new user",
-				"error":   err.Error(),
+			if err != nil {
+				message := gin.H{
+					"message": "unable to create new user",
+					"error":   err.Error(),
+				}
+				c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+				return
 			}
-			c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		} else { // Failed to fetch user
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 	}
@@ -471,21 +489,30 @@ func DiscordAuth(c *gin.Context) {
 		return
 	}
 
-	user, err := database.Db.Queries.GetUserByEmail(c, discordUser.Email)
+	user, err := database.Db.Queries.GetUserById(c, discordUser.ID)
+	if err != nil { // If the email exists we need to use that user
+		user, err = database.Db.Queries.GetUserById(c, discordUser.Email)
+	}
+
 	if err != nil { // User does not exist yet
+		if errors.Is(err, pgx.ErrNoRows) {
 
-		user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
-			UserID:   discordUser.ID,
-			Email:    discordUser.Email,
-			Username: discordUser.Username,
-		})
+			user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
+				UserID:   discordUser.ID,
+				Email:    discordUser.Email,
+				Username: discordUser.Username,
+			})
 
-		if err != nil {
-			message := gin.H{
-				"message": "unable to create new user",
-				"error":   err.Error(),
+			if err != nil {
+				message := gin.H{
+					"message": "unable to create new user",
+					"error":   err.Error(),
+				}
+				c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+				return
 			}
-			c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+		} else { // Failed to fetch user
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 	}
