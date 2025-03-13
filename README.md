@@ -11,13 +11,10 @@
 
 ## Table of Contents
 - [System Requirements](#system-requirements)
-- [Installation](#installation)
-- [Project Setup](#project-setup)
-- [Environment Configuration](#environment-configuration)
-- [Development Tools](#development-tools)
-- [Build and Run Instructions](#build-and-run-instructions)
-- [Debugging and Troubleshooting](#debugging-and-troubleshooting)
-- [Deployment](#deployment)
+- [Installation](#installation-of-requisite-software)
+- [Project Setup](#project-setup--configuration)
+- [Building & Running](#building--running)
+- [Debugging & Troubleshooting](#debugging--troubleshooting)
 
 ## System Requirements
 
@@ -59,17 +56,17 @@
 
 ### Golang
 
-1. [Download](https://go.dev/dl/) and run the Golang installer for the desired version
+1. [Download](https://go.dev/dl/) and run the Golang installer for the desired version (1.22.9 under archived versions)
 
 ### Golang Migrate
 
 1. Follow the [installation instructions](https://github.com/golang-migrate/migrate/blob/master/cmd/migrate/README.md)
-for golang migrate using any of the listed options for your operating system
+for golang migrate with **Go ToolChain Unversioned for Go 1.16+** on Windows, or **brew** for macOS.
 
 ### SQLC
 
 1. Follow the default [installation instructions](https://docs.sqlc.dev/en/stable/overview/install.html)
-   for sqlc using any of the listed options for your operating system
+   for sqlc using **Go Install**.
 
 ## Project Setup & Configuration
 
@@ -80,12 +77,13 @@ for golang migrate using any of the listed options for your operating system
 plugins.
 3. Create a file called `.env` in the project root and populate these default values
    ```
+    GO_ENV=development
     POSTGRESQL_URL=postgresql://username:password@calenduh-db:5432/calenduh?sslmode=disable
     POSTGRES_USER=username
     POSTGRES_PASSWORD=password
     POSTGRES_DB=calenduh
     ```
-4. Use SQLC to generate database interface files in `/internal/sqlc/`. This generated code will already be referenced throughout the project.
+4. Use SQLC to generate database interface files in `/internal/sqlc/`. This generated code will be referenced throughout the codebase and is required to compile successfully.
    ```bash
    make sqlc
    ```
@@ -102,19 +100,46 @@ plugins.
    ```bash
    make run
    ```
-3. Delete the containers
+   
+## Using Routes
+1. Access a full list of routes in `./main.go` under the function `setupRoutes()`
+   
+### Stopping & Starting
+1. Stop the containers
+   ```bash
+   docker compose down -d
+   ```
+2. Start the containers
+   ```bash
+   make run
+   ```
+3. Stop and delete the containers
    ```bash
    make clean
    ```
-4. Delete the containers and persistent volumes (useful if database is in an errored state)
+4. Stop and delete the containers and persistent volumes (useful if database is in an errored state)
    ```bash
    make clean-db
    ```
-5. Creating a new database migration
+
+### Migrations & SQLC
+1. Creating a new database migration
    ```bash
    make migration
    ```
-6. Regenerate the database types in Golang
+2. Regenerate the database types in Golang
    ```bash
    make sqlc
    ```
+
+## Debugging & Troubleshooting
+
+### Issues Installing Requisite Software
+- It is important to install the requisite software in-order, as some software depends on previously installed software.
+- Docker, Golang, Go Migrate, and SQLC all offer multiple installation options. If the primary recommended option fails, it is recommended to try any alternative that is supported by your operating system as an alternative.
+- Windows specifically has multiple different CLI applications, such as powershell, terminal, and git bash, and many other 3rd party options. It is recommended that in the event of issues using CLI-installation failures, to try an alternative CLI if possible.
+
+### Issues Running or Testing
+- When encountering a compilation/building error for the Golang service, calenduh-api, confirm that the code is syntactically correct at the point of failure, which will be listed as a file and line number in the CLI. A common reason for a compilation failure is because the sql queries have not been compiled in to Golang with SQLC, ensure that `make sqlc` has successfully run at least once before attempting to build and run locally.
+- Issues accessing the api or database can occur if the exposed port is modified prior to building and running. Ensure that the ports you are using to access the api and database match those listed in `./docker-compose.yml`.
+- If all-else fails, these requisite software and languages are widely used and solutions to specific issues installing, building, or running can certainly be solved by conducting independent research online or with the use of GenAI tools.

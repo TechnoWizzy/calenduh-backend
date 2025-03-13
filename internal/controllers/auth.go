@@ -146,7 +146,7 @@ func AppleLogin(c *gin.Context) {
 		email = token.Claims.(jwt.MapClaims)["email"].(string)
 	}
 
-	user, err := database.Db.Queries.GetUserById(c, appleLoginBody.UserId)
+	user, err := database.Db.Queries.GetUserByEmail(c, email)
 
 	if err != nil { // No user
 		if errors.Is(err, pgx.ErrNoRows) {
