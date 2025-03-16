@@ -16,8 +16,8 @@ returning *;
 
 -- name: UpdateUser :one
 update users
-set email = $1, username = $2
-where user_id = $3
+set email = $1, username = $2, profile_picture = $3, birthday = $4, name = $5
+where user_id = $6
 returning *;
 
 -- name: DeleteUser :exec
