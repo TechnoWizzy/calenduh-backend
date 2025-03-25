@@ -27,8 +27,8 @@ returning *;
 
 -- name: UpdateEvent :one
 update events
-set calendar_id = $1, name = $2, location = $3, description = $4, notification = $5, frequency = $6, priority = $7, start_time = $8, end_time = $9, all_day = $10, first_notification = $11, second_notification = $12, last_edited = now()
-where event_id = $11 and calendar_id = $1
+set calendar_id = $3, name = $4, location = $5, description = $6, notification = $7, frequency = $8, priority = $9, start_time = $10, end_time = $11, all_day = $12, first_notification = $13, second_notification = $14, last_edited = now()
+where event_id = $1 and calendar_id = $2
 returning *;
 
 -- name: DeleteEvent :exec
