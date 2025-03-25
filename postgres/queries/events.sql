@@ -27,7 +27,7 @@ returning *;
 
 -- name: UpdateEvent :one
 update events
-set calendar_id = $1, name = $2, location = $3, description = $4, notification = $5, frequency = $6, priority = $7, start_time = $8, end_time = $9, all_day = $10
+set calendar_id = $1, name = $2, location = $3, description = $4, notification = $5, frequency = $6, priority = $7, start_time = $8, end_time = $9, all_day = $10, last_edited = now()
 where event_id = $11 and calendar_id = $1
 returning *;
 
