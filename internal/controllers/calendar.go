@@ -64,6 +64,29 @@ func GetUserCalendars(c *gin.Context) {
 
 func GetGroupCalendars(c *gin.Context) {
 	groups := *ParseGroups(c)
+	groupId := c.Param("group_id")
+	if groupId == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "group_id is required"})
+		return
+	}
+	for _, group := range groups {
+		if groupId == group.GroupID {
+			calendars, err := database.Db.Queries.GetCalendarsByUserId(c, &group.GroupID)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			c.JSON(http.StatusOK, calendars)
+			return
+		}
+	}
+
+	c.AbortWithStatus(http.StatusUnauthorized)
+}
+
+func GetAllGroupCalendars(c *gin.Context) {
+	groups := *ParseGroups(c)
 	calendars := make([]sqlc.Calendar, 0)
 	for _, group := range groups {
 		groupCalendars, err := database.Db.Queries.GetCalendarsByUserId(c, &group.GroupID)

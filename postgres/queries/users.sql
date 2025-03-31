@@ -12,9 +12,14 @@ returning *;
 
 -- name: UpdateUser :one
 update users
-set email = $1, username = $2, profile_picture = $3, birthday = $4, name = $5
-where user_id = $6
+set email = $2, username = $3, birthday = $4, name = $5, default_calendar_id = $6
+where user_id = $1
 returning *;
+
+-- name: DeleteUserProfilePicture :exec
+update users
+set profile_picture = null
+where profile_picture = $1;
 
 -- name: DeleteUser :exec
 delete from users

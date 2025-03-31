@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"calenduh-backend/internal/database"
 	"calenduh-backend/internal/util"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -11,6 +12,7 @@ import (
 )
 
 func UploadFile(c *gin.Context) {
+	user := *ParseUser(c)
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
@@ -41,6 +43,11 @@ func UploadFile(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
 			return
 		}
+	} else {
+		if *user.ProfilePicture != key {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "key does not match"})
+			return
+		}
 	}
 
 	buffer, err := file.Open()
@@ -60,22 +67,12 @@ func UploadFile(c *gin.Context) {
 		return
 	}
 
-	/**
-	Do something with file
-	if c.Query("key") == "" {
-		if err != nil {
-			_ = deleteFile(key)
-			c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
-			return
-		}
-	}
-	*/
-
 	c.PureJSON(http.StatusOK, key)
 	return
 }
 
 func DeleteFile(c *gin.Context) {
+	user := *ParseUser(c)
 	key := c.Param("key")
 
 	if key == "" {
@@ -84,11 +81,17 @@ func DeleteFile(c *gin.Context) {
 		return
 	}
 
-	/**
-	Remove file from database locations?
-	*/
+	if *user.ProfilePicture != key {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "key does not match"})
+		return
+	}
 
 	if err := deleteFile(key); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := database.Db.Queries.DeleteUserProfilePicture(c, &key); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
