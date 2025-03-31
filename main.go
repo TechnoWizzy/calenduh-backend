@@ -121,6 +121,7 @@ func setupRoutes(router *gin.Engine) {
 	}
 	{ // Groups
 		groups.GET("/", controllers.GetAllGroups)                                      // List all groups
+		groups.GET("/@me", controllers.LoggedIn, controllers.GetMyGroups)              // List all user groups
 		groups.GET("/:group_id", controllers.LoggedIn, controllers.GetGroup)           // Get a specific group
 		groups.POST("/join/:invite_code", controllers.LoggedIn, controllers.JoinGroup) // Join a group by code
 		groups.POST("/", controllers.LoggedIn, controllers.CreateGroup)                // Create a new group

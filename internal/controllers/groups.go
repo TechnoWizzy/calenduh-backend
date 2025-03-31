@@ -25,6 +25,11 @@ func GetAllGroups(c *gin.Context) {
 	c.JSON(http.StatusOK, groups)
 }
 
+func GetMyGroups(c *gin.Context) {
+	groups := *ParseGroups(c)
+	c.PureJSON(http.StatusOK, groups)
+}
+
 func GetGroup(c *gin.Context) {
 	groups := *ParseGroups(c)
 	groupId := c.Param("group_id")
