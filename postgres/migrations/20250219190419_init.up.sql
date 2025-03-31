@@ -2,7 +2,7 @@ create type session_type as enum ('APPLE', 'GOOGLE', 'DISCORD');
 
 create table users (
     user_id text primary key,
-    email text unique not null,
+    email text not null,
     username text not null
 );
 
