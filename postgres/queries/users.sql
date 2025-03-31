@@ -5,10 +5,6 @@ select * from users;
 select * from users
 where user_id = $1;
 
--- name: GetUserByEmail :one
-select * from users
-where email = $1;
-
 -- name: CreateUser :one
 insert into users (user_id, email, username)
 values ($1,$2,$3)

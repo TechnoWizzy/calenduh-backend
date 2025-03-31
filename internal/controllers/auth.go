@@ -147,9 +147,6 @@ func AppleLogin(c *gin.Context) {
 	}
 
 	user, err := database.Db.Queries.GetUserById(c, appleLoginBody.UserId)
-	if err != nil { // If the email exists we need to use that user
-		user, err = database.Db.Queries.GetUserById(c, email)
-	}
 
 	if err != nil { // User does not exist yet
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -315,12 +312,9 @@ func GoogleAuth(c *gin.Context) {
 	}
 
 	user, err := database.Db.Queries.GetUserById(c, googleUser.ID)
-	if err != nil { // If the email exists we need to use that user
-		user, err = database.Db.Queries.GetUserByEmail(c, googleUser.Email)
-	}
 
-	if err != nil { // User does not exist yet
-		if errors.Is(err, pgx.ErrNoRows) {
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) { // User does not exist yet
 			username := strings.Split(googleUser.Email, "@")[0]
 
 			user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
@@ -490,9 +484,6 @@ func DiscordAuth(c *gin.Context) {
 	}
 
 	user, err := database.Db.Queries.GetUserById(c, discordUser.ID)
-	if err != nil { // If the email exists we need to use that user
-		user, err = database.Db.Queries.GetUserById(c, discordUser.Email)
-	}
 
 	if err != nil { // User does not exist yet
 		if errors.Is(err, pgx.ErrNoRows) {
