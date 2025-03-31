@@ -79,8 +79,14 @@ func UpdateUser(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
+		return
 	}
+
+	c.PureJSON(http.StatusOK, user)
 }
 
 func DeleteMe(c *gin.Context) {
