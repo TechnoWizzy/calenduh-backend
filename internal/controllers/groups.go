@@ -112,6 +112,35 @@ func JoinGroup(c *gin.Context) {
 	c.JSON(http.StatusOK, group)
 }
 
+func LeaveGroup(c *gin.Context) {
+	user := *ParseUser(c)
+	groups := *ParseGroups(c)
+	groupId := c.Param("group_id")
+
+	if groupId == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "group_id is required"})
+		return
+	}
+
+	for _, group := range groups {
+		if groupId == group.GroupID {
+			if err := database.Db.Queries.DeleteGroupMember(c, sqlc.DeleteGroupMemberParams{
+				UserID:  user.UserID,
+				GroupID: group.GroupID,
+			}); err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			c.Status(http.StatusOK)
+			return
+		}
+	}
+
+	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "cannot leave group you are not in"})
+	return
+}
+
 func UpdateGroup(c *gin.Context) {
 	groups := *ParseGroups(c)
 	var input sqlc.UpdateGroupParams

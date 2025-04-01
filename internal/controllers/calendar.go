@@ -71,7 +71,7 @@ func GetGroupCalendars(c *gin.Context) {
 	}
 	for _, group := range groups {
 		if groupId == group.GroupID {
-			calendars, err := database.Db.Queries.GetCalendarsByUserId(c, &group.GroupID)
+			calendars, err := database.Db.Queries.GetCalendarsByGroupId(c, &group.GroupID)
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return

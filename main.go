@@ -129,6 +129,7 @@ func setupRoutes(router *gin.Engine) {
 		groups.GET("/@me", controllers.LoggedIn, controllers.GetMyGroups)              // List all user groups
 		groups.GET("/:group_id", controllers.LoggedIn, controllers.GetGroup)           // Get a specific group
 		groups.POST("/join/:invite_code", controllers.LoggedIn, controllers.JoinGroup) // Join a group by code
+		groups.POST("/leave/:group_id", controllers.LoggedIn, controllers.LeaveGroup)  // Leave a group
 		groups.POST("/", controllers.LoggedIn, controllers.CreateGroup)                // Create a new group
 		groups.PUT("/:group_id", controllers.LoggedIn, controllers.UpdateGroup)        // Update a group
 		groups.DELETE("/:group_id", controllers.LoggedIn, controllers.DeleteGroup)     // Delete a group
