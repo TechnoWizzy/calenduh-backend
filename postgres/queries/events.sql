@@ -1,7 +1,7 @@
 -- name: GetAllEvents :many
 select *
 from events
-where start_time between $1 and sqlc.arg(end_time) or end_time between $1 and sqlc.arg(end_time);
+where end_time < $1;
 
 -- name: GetEventById :one
 select *
@@ -13,12 +13,12 @@ select e.*
 from users u
 inner join calendars c on u.user_id = c.user_id
 inner join events e on c.calendar_id = e.calendar_id
-where u.user_id = $1 and (start_time between $2 and sqlc.arg(end_time) or end_time between $2 and sqlc.arg(end_time));
+where u.user_id = $1  and start_time < sqlc.arg(end_time);
 
 -- name: GetEventByCalendarId :many
 select *
 from events
-where calendar_id = $1 and (start_time between $2 and sqlc.arg(end_time) or end_time between $2 and sqlc.arg(end_time));
+where calendar_id = $1 and start_time < sqlc.arg(end_time);
 
 -- name: CreateEvent :one
 insert into events (event_id, calendar_id, name, location, description, notification, frequency, priority, start_time, end_time, all_day, first_notification, second_notification)

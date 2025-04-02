@@ -5,19 +5,18 @@ import (
 	"calenduh-backend/internal/sqlc"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/gorhill/cronexpr"
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 )
 
 func GetAllEvents(c *gin.Context) {
 	start, end := ParseRange(c)
-	events, err := database.Db.Queries.GetAllEvents(c, sqlc.GetAllEventsParams{
-		StartTime: *start,
-		EndTime:   *end,
-	})
+	events, err := database.Db.Queries.GetAllEvents(c, *end)
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
@@ -27,6 +26,18 @@ func GetAllEvents(c *gin.Context) {
 		}
 		return
 	}
+
+	for _, event := range events {
+		recurrenceEvents := GenerateRecurrenceEvents(event, start, end)
+		events = append(events, recurrenceEvents...)
+	}
+
+	// Sort events
+	sort.Slice(events, func(i, j int) bool {
+		a := events[i]
+		b := events[j]
+		return a.StartTime.After(b.StartTime)
+	})
 
 	c.JSON(http.StatusOK, events)
 }
@@ -35,9 +46,8 @@ func GetUserEvents(c *gin.Context) {
 	user := *ParseUser(c)
 	start, end := ParseRange(c)
 	events, err := database.Db.Queries.GetEventsByUserId(c, sqlc.GetEventsByUserIdParams{
-		UserID:    user.UserID,
-		StartTime: *start,
-		EndTime:   *end,
+		UserID:  user.UserID,
+		EndTime: *end,
 	})
 	if err != nil {
 		switch {
@@ -48,6 +58,18 @@ func GetUserEvents(c *gin.Context) {
 		}
 		return
 	}
+
+	for _, event := range events {
+		recurrenceEvents := GenerateRecurrenceEvents(event, start, end)
+		events = append(events, recurrenceEvents...)
+	}
+
+	// Sort events
+	sort.Slice(events, func(i, j int) bool {
+		a := events[i]
+		b := events[j]
+		return a.StartTime.After(b.StartTime)
+	})
 
 	c.JSON(http.StatusOK, events)
 }
@@ -89,7 +111,6 @@ func GetCalendarEvents(c *gin.Context) {
 
 	events, err := database.Db.Queries.GetEventByCalendarId(c, sqlc.GetEventByCalendarIdParams{
 		CalendarID: calendarId,
-		StartTime:  *start,
 		EndTime:    *end,
 	})
 	if err != nil {
@@ -101,6 +122,18 @@ func GetCalendarEvents(c *gin.Context) {
 		}
 		return
 	}
+
+	for _, event := range events {
+		recurrenceEvents := GenerateRecurrenceEvents(event, start, end)
+		events = append(events, recurrenceEvents...)
+	}
+
+	// Sort events
+	sort.Slice(events, func(i, j int) bool {
+		a := events[i]
+		b := events[j]
+		return a.StartTime.After(b.StartTime)
+	})
 
 	c.JSON(http.StatusOK, events)
 }
@@ -313,4 +346,23 @@ func ParseRange(c *gin.Context) (*time.Time, *time.Time) {
 	}
 
 	return &start, &end
+}
+
+func GenerateRecurrenceEvents(event sqlc.Event, start, end *time.Time) []sqlc.Event {
+	var events []sqlc.Event
+	if event.Frequency != nil {
+		duration := event.EndTime.Sub(event.StartTime)
+		expr := cronexpr.MustParse(*event.Frequency)
+		for date := expr.Next(event.EndTime); date.Before(*end) && date.After(time.Time{}); date = expr.Next(date) {
+			// Generate a duplicate event with the new date and append to events
+			nextEvent := event
+			nextEvent.StartTime = date
+			nextEvent.EndTime = date.Add(duration)
+			if nextEvent.StartTime.After(*start) {
+				events = append(events, nextEvent)
+			}
+		}
+	}
+
+	return events
 }
