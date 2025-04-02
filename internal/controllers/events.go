@@ -289,20 +289,32 @@ func PruneEvents(c *gin.Context) {
 		return
 	}
 
-	for _, event := range events {
-		if event.Frequency != nil && *event.Frequency != "" {
-			expr, err := cronexpr.Parse(*event.Frequency)
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
+	if err = database.Transaction(c, func(queries *sqlc.Queries) error {
+		for _, event := range events {
+			if event.Frequency != nil && *event.Frequency != "" {
+				expr, err := cronexpr.Parse(*event.Frequency)
+				if err != nil {
+					return err
+				}
 
-			date := expr.Next(event.EndTime)
-			if date.After(now) {
-
+				date := expr.Next(event.EndTime)
+				if date.Before(now) {
+					if err := queries.DeleteEvent(c, sqlc.DeleteEventParams{
+						EventID:    event.EventID,
+						CalendarID: event.CalendarID,
+					}); err != nil {
+						return err
+					}
+				}
 			}
 		}
+
+		c.Status(http.StatusOK)
+		return nil
+	}); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
+
 }
 
 func DeleteAllEvents(c *gin.Context) {
