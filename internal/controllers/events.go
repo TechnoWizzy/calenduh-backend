@@ -36,7 +36,7 @@ func GetAllEvents(c *gin.Context) {
 	sort.Slice(events, func(i, j int) bool {
 		a := events[i]
 		b := events[j]
-		return a.StartTime.After(b.StartTime)
+		return a.StartTime.Before(b.StartTime)
 	})
 
 	c.JSON(http.StatusOK, events)
@@ -69,7 +69,7 @@ func GetUserEvents(c *gin.Context) {
 	sort.Slice(events, func(i, j int) bool {
 		a := events[i]
 		b := events[j]
-		return a.StartTime.After(b.StartTime)
+		return a.StartTime.Before(b.StartTime)
 	})
 
 	c.JSON(http.StatusOK, events)
@@ -133,7 +133,7 @@ func GetCalendarEvents(c *gin.Context) {
 	sort.Slice(events, func(i, j int) bool {
 		a := events[i]
 		b := events[j]
-		return a.StartTime.After(b.StartTime)
+		return a.StartTime.Before(b.StartTime)
 	})
 
 	c.JSON(http.StatusOK, events)
