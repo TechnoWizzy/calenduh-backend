@@ -126,6 +126,7 @@ func CreateUserCalendar(c *gin.Context) {
 
 	input.CalendarID = gonanoid.Must()
 	input.UserID = &user.UserID
+	input.GroupID = nil
 
 	calendar, err := database.Db.Queries.CreateCalendar(c, input)
 	if err != nil {
@@ -152,6 +153,7 @@ func CreateGroupCalendar(c *gin.Context) {
 
 	input.CalendarID = gonanoid.Must()
 	input.GroupID = &groupId
+	input.UserID = nil
 
 	if !CanEditGroup(*input.GroupID, groups) {
 		c.AbortWithStatus(http.StatusUnauthorized)
