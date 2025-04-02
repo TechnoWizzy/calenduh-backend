@@ -45,6 +45,7 @@ func GetAllEvents(c *gin.Context) {
 func GetUserEvents(c *gin.Context) {
 	user := *ParseUser(c)
 	start, end := ParseRange(c)
+
 	events, err := database.Db.Queries.GetEventsByUserId(c, sqlc.GetEventsByUserIdParams{
 		UserID:  user.UserID,
 		EndTime: *end,

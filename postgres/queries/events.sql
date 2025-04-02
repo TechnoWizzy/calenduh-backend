@@ -1,7 +1,7 @@
 -- name: GetAllEvents :many
 select *
 from events
-where end_time < $1;
+where start_time < sqlc.arg(end_time);
 
 -- name: GetEventById :one
 select *
