@@ -297,7 +297,7 @@ func PruneEvents(c *gin.Context) {
 					return err
 				}
 
-				date := expr.Next(event.EndTime)
+				date := expr.Next(now)
 				if date.Before(now) {
 					if err := queries.DeleteEvent(c, sqlc.DeleteEventParams{
 						EventID:    event.EventID,
