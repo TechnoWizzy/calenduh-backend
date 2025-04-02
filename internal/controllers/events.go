@@ -384,7 +384,7 @@ func ParseRange(c *gin.Context) (*time.Time, *time.Time) {
 }
 
 func GenerateRecurrenceEvents(events *[]sqlc.Event, start, end *time.Time) ([]sqlc.Event, error) {
-	var includedEvents []sqlc.Event
+	includedEvents := make([]sqlc.Event, 0)
 
 	for _, event := range *events {
 		if event.StartTime.After(*start) {
