@@ -122,6 +122,7 @@ func setupRoutes(router *gin.Engine) {
 		events.POST("/:calendar_id", controllers.LoggedIn, controllers.CreateEvent)                              // Create a new event
 		events.PUT("/:calendar_id/:event_id", controllers.LoggedIn, controllers.UpdateEvent)                     // Update an event
 		events.DELETE("/@all", controllers.DeleteAllEvents)                                                      // Delete all events
+		events.DELETE("/@prune", controllers.LoggedIn, controllers.PruneEvents)                                  // Prune events that are no longer occurring
 		events.DELETE("/:calendar_id/:event_id", controllers.LoggedIn, controllers.DeleteEvent)                  // Delete an event
 	}
 	{ // Groups

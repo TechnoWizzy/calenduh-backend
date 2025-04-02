@@ -27,22 +27,11 @@ func GetAllEvents(c *gin.Context) {
 		return
 	}
 
-	for _, event := range events {
-		recurrenceEvents, err := GenerateRecurrenceEvents(event, start, end)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-
-		events = append(events, *recurrenceEvents...)
+	events, err = GenerateRecurrenceEvents(&events, start, end)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-
-	// Sort events
-	sort.Slice(events, func(i, j int) bool {
-		a := events[i]
-		b := events[j]
-		return a.StartTime.Before(b.StartTime)
-	})
 
 	c.JSON(http.StatusOK, events)
 }
@@ -65,22 +54,11 @@ func GetUserEvents(c *gin.Context) {
 		return
 	}
 
-	for _, event := range events {
-		recurrenceEvents, err := GenerateRecurrenceEvents(event, start, end)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-
-		events = append(events, *recurrenceEvents...)
+	events, err = GenerateRecurrenceEvents(&events, start, end)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-
-	// Sort events
-	sort.Slice(events, func(i, j int) bool {
-		a := events[i]
-		b := events[j]
-		return a.StartTime.Before(b.StartTime)
-	})
 
 	c.JSON(http.StatusOK, events)
 }
@@ -134,22 +112,11 @@ func GetCalendarEvents(c *gin.Context) {
 		return
 	}
 
-	for _, event := range events {
-		recurrenceEvents, err := GenerateRecurrenceEvents(event, start, end)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-
-		events = append(events, *recurrenceEvents...)
+	events, err = GenerateRecurrenceEvents(&events, start, end)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-
-	// Sort events
-	sort.Slice(events, func(i, j int) bool {
-		a := events[i]
-		b := events[j]
-		return a.StartTime.Before(b.StartTime)
-	})
 
 	c.JSON(http.StatusOK, events)
 }
@@ -305,6 +272,39 @@ func DeleteEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "event deleted successfully"})
 }
 
+func PruneEvents(c *gin.Context) {
+	user := *ParseUser(c)
+	now := time.Now()
+	events, err := database.Db.Queries.GetEventsByUserId(c, sqlc.GetEventsByUserIdParams{
+		UserID:  user.UserID,
+		EndTime: now,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "no events not found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	for _, event := range events {
+		if event.Frequency != nil && *event.Frequency != "" {
+			expr, err := cronexpr.Parse(*event.Frequency)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			date := expr.Next(event.EndTime)
+			if date.After(now) {
+
+			}
+		}
+	}
+}
+
 func DeleteAllEvents(c *gin.Context) {
 	err := database.Db.Queries.DeleteAllEvents(c)
 	if err != nil {
@@ -364,28 +364,41 @@ func ParseRange(c *gin.Context) (*time.Time, *time.Time) {
 	return &start, &end
 }
 
-func GenerateRecurrenceEvents(event sqlc.Event, start, end *time.Time) (*[]sqlc.Event, error) {
-	var events []sqlc.Event
-	if event.Frequency != nil && *event.Frequency != "" {
-		duration := event.EndTime.Sub(event.StartTime)
-		expr, err := cronexpr.Parse(*event.Frequency)
-		if err != nil {
-			return nil, err
-		}
+func GenerateRecurrenceEvents(events *[]sqlc.Event, start, end *time.Time) ([]sqlc.Event, error) {
+	var includedEvents []sqlc.Event
 
-		for date := expr.Next(event.EndTime); date.Before(*end) && date.After(time.Time{}); date = expr.Next(date) {
-			// Generate a duplicate event with the new date and append to events
-			nextEvent := event
-			nextEvent.StartTime = date
-			nextEvent.EndTime = date.Add(duration)
-			if nextEvent.StartTime.After(*start) {
-				events = append(events, nextEvent)
+	for _, event := range *events {
+		if event.StartTime.After(*start) {
+			includedEvents = append(includedEvents, event)
+		}
+		if event.Frequency != nil && *event.Frequency != "" {
+			duration := event.EndTime.Sub(event.StartTime)
+			expr, err := cronexpr.Parse(*event.Frequency)
+			if err != nil {
+				return nil, err
 			}
-			if len(events) > 1000 {
-				break
+
+			for date := expr.Next(event.EndTime); date.Before(*end) && date.After(time.Time{}); date = expr.Next(date) {
+				// Generate a duplicate event with the new date and append to events
+				nextEvent := event
+				nextEvent.StartTime = date
+				nextEvent.EndTime = date.Add(duration)
+				if nextEvent.StartTime.After(*start) && nextEvent.StartTime.Before(*end) {
+					includedEvents = append(includedEvents, nextEvent)
+				}
+				if len(*events) > 1000 {
+					break
+				}
 			}
 		}
 	}
 
-	return &events, nil
+	// Sort events
+	sort.Slice(includedEvents, func(i, j int) bool {
+		a := includedEvents[i]
+		b := includedEvents[j]
+		return a.StartTime.Before(b.StartTime)
+	})
+
+	return includedEvents, nil
 }
