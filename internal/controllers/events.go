@@ -306,6 +306,13 @@ func PruneEvents(c *gin.Context) {
 						return err
 					}
 				}
+			} else {
+				if err := queries.DeleteEvent(c, sqlc.DeleteEventParams{
+					EventID:    event.EventID,
+					CalendarID: event.CalendarID,
+				}); err != nil {
+					return err
+				}
 			}
 		}
 
