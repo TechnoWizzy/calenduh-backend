@@ -21,8 +21,8 @@ from events
 where calendar_id = $1 and (start_time between $2 and sqlc.arg(end_time) or end_time between $2 and sqlc.arg(end_time));
 
 -- name: CreateEvent :one
-insert into events (event_id, calendar_id, name, location, description, notification, frequency, priority, start_time, end_time, all_day)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+insert into events (event_id, calendar_id, name, location, description, notification, frequency, priority, start_time, end_time, all_day, first_notification, second_notification)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $11)
 returning *;
 
 -- name: UpdateEvent :one
