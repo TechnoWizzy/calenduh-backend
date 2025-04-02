@@ -351,7 +351,7 @@ func ParseRange(c *gin.Context) (*time.Time, *time.Time) {
 
 func GenerateRecurrenceEvents(event sqlc.Event, start, end *time.Time) []sqlc.Event {
 	var events []sqlc.Event
-	if event.Frequency != nil {
+	if event.Frequency != nil && *event.Frequency != "" {
 		duration := event.EndTime.Sub(event.StartTime)
 		expr := cronexpr.MustParse(*event.Frequency)
 		for date := expr.Next(event.EndTime); date.Before(*end) && date.After(time.Time{}); date = expr.Next(date) {
