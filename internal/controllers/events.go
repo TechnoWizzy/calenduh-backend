@@ -28,8 +28,13 @@ func GetAllEvents(c *gin.Context) {
 	}
 
 	for _, event := range events {
-		recurrenceEvents := GenerateRecurrenceEvents(event, start, end)
-		events = append(events, recurrenceEvents...)
+		recurrenceEvents, err := GenerateRecurrenceEvents(event, start, end)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		events = append(events, *recurrenceEvents...)
 	}
 
 	// Sort events
@@ -61,8 +66,13 @@ func GetUserEvents(c *gin.Context) {
 	}
 
 	for _, event := range events {
-		recurrenceEvents := GenerateRecurrenceEvents(event, start, end)
-		events = append(events, recurrenceEvents...)
+		recurrenceEvents, err := GenerateRecurrenceEvents(event, start, end)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		events = append(events, *recurrenceEvents...)
 	}
 
 	// Sort events
@@ -125,8 +135,13 @@ func GetCalendarEvents(c *gin.Context) {
 	}
 
 	for _, event := range events {
-		recurrenceEvents := GenerateRecurrenceEvents(event, start, end)
-		events = append(events, recurrenceEvents...)
+		recurrenceEvents, err := GenerateRecurrenceEvents(event, start, end)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		events = append(events, *recurrenceEvents...)
 	}
 
 	// Sort events
@@ -349,11 +364,15 @@ func ParseRange(c *gin.Context) (*time.Time, *time.Time) {
 	return &start, &end
 }
 
-func GenerateRecurrenceEvents(event sqlc.Event, start, end *time.Time) []sqlc.Event {
+func GenerateRecurrenceEvents(event sqlc.Event, start, end *time.Time) (*[]sqlc.Event, error) {
 	var events []sqlc.Event
 	if event.Frequency != nil && *event.Frequency != "" {
 		duration := event.EndTime.Sub(event.StartTime)
-		expr := cronexpr.MustParse(*event.Frequency)
+		expr, err := cronexpr.Parse(*event.Frequency)
+		if err != nil {
+			return nil, err
+		}
+
 		for date := expr.Next(event.EndTime); date.Before(*end) && date.After(time.Time{}); date = expr.Next(date) {
 			// Generate a duplicate event with the new date and append to events
 			nextEvent := event
@@ -368,5 +387,5 @@ func GenerateRecurrenceEvents(event sqlc.Event, start, end *time.Time) []sqlc.Ev
 		}
 	}
 
-	return events
+	return &events, nil
 }
