@@ -5,7 +5,6 @@ import (
 	"calenduh-backend/internal/database"
 	"calenduh-backend/internal/util"
 	"fmt"
-	"github.com/gin-contrib/cors"
 	"github.com/joho/godotenv"
 	"log"
 	"net/http"
@@ -48,7 +47,7 @@ func main() {
 	// Router setup
 	router := gin.Default()
 	router.Use(gin.Recovery())
-	router.Use(cors.Default())
+	router.Use(util.CORSMiddleware())
 	router.Use(controllers.Authorize)
 	router.GET("/health", func(c *gin.Context) {
 		uptime := time.Since(timeStarted).Truncate(time.Second)
