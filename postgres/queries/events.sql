@@ -22,7 +22,7 @@ from groups g
     inner join events e on c.calendar_id = e.calendar_id
 where g.group_id = $1  and start_time < sqlc.arg(end_time);
 
--- name: GetEventByCalendarId :many
+-- name: GetEventsByCalendarId :many
 select *
 from events
 where calendar_id = $1 and start_time < sqlc.arg(end_time);

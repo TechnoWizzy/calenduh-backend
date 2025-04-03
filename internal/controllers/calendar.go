@@ -4,10 +4,12 @@ import (
 	"calenduh-backend/internal/database"
 	"calenduh-backend/internal/sqlc"
 	"errors"
+	"github.com/arran4/golang-ical"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"net/http"
+	"time"
 )
 
 func GetAllCalendars(c *gin.Context) {
@@ -44,6 +46,75 @@ func GetCalendar(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, calendar)
+}
+
+func GetCalendarICal(c *gin.Context) {
+	calendarId := c.Param("calendar_id")
+	if calendarId == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
+		return
+	}
+
+	calendar, err := database.Db.Queries.GetCalendarById(c, calendarId)
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "calendar not found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	events, err := database.Db.Queries.GetEventsByCalendarId(c, sqlc.GetEventsByCalendarIdParams{
+		CalendarID: calendar.CalendarID,
+		EndTime:    time.UnixMilli(1 << 48),
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "calendar events not found"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	cal := ics.NewCalendar()
+	cal.SetMethod(ics.MethodPublish)
+	cal.SetDescription("Generated calendar for " + calendar.Title)
+	cal.SetProductId("-//Calenduh//Calenduh//EN")
+
+	for _, event := range events {
+		icalEvent := cal.AddEvent(event.EventID)
+		icalEvent.SetSummary(event.Name)
+		icalEvent.SetColor(calendar.Color)
+
+		if event.Description != nil {
+			icalEvent.SetDescription(*event.Description)
+		}
+
+		if event.Location != nil {
+			icalEvent.SetLocation(*event.Location)
+		}
+
+		icalEvent.SetStartAt(event.StartTime)
+		icalEvent.SetEndAt(event.EndTime)
+
+		if event.AllDay {
+			icalEvent.SetAllDayStartAt(event.StartTime)
+			icalEvent.SetAllDayEndAt(event.EndTime)
+		}
+
+		if event.Priority != nil {
+			icalEvent.SetPriority(int(*event.Priority))
+		}
+	}
+
+	data := cal.Serialize()
+	c.Header("Content-Type", "text/calendar; charset=utf-8")
+	c.Header("Content-Disposition", "attachment; filename=\"calendar.ics\"")
+	c.String(http.StatusOK, data)
 }
 
 func GetUserCalendars(c *gin.Context) {

@@ -118,7 +118,7 @@ func GetCalendarEvents(c *gin.Context) {
 		return
 	}
 
-	events, err := database.Db.Queries.GetEventByCalendarId(c, sqlc.GetEventByCalendarIdParams{
+	events, err := database.Db.Queries.GetEventsByCalendarId(c, sqlc.GetEventsByCalendarIdParams{
 		CalendarID: calendarId,
 		EndTime:    *end,
 	})

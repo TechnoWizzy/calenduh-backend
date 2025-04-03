@@ -143,6 +143,7 @@ func setupRoutes(router *gin.Engine) {
 		calendars.GET("/@groups/:group_id", controllers.LoggedIn, controllers.GetGroupCalendars) // List all calendars owned by a single user group
 		calendars.GET("/@subscribed", controllers.LoggedIn, controllers.GetSubscribedCalendars)  // List all the calendars subscribed to by user
 		calendars.GET("/:calendar_id", controllers.LoggedIn, controllers.GetCalendar)            // Get a specific calendar
+		calendars.GET("/:calendar_id/ical", controllers.LoggedIn, controllers.GetCalendarICal)   // Get a specific calendar
 		calendars.POST("/", controllers.LoggedIn, controllers.CreateUserCalendar)                // Create a new user calendar
 		calendars.POST("/:group_id", controllers.LoggedIn, controllers.CreateGroupCalendar)      // Create a new group calendar
 		calendars.PUT("/:calendar_id", controllers.LoggedIn, controllers.UpdateCalendar)         // Update a calendar
