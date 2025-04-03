@@ -45,15 +45,10 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://exp.direct"}
-	// config.AllowOrigins = []string{"http://google.com", "http://facebook.com"}
-	// config.AllowAllOrigins = true
-
 	// Router setup
 	router := gin.Default()
 	router.Use(gin.Recovery())
-	router.Use(cors.New(config))
+	router.Use(cors.Default())
 	router.Use(controllers.Authorize)
 	router.GET("/health", func(c *gin.Context) {
 		uptime := time.Since(timeStarted).Truncate(time.Second)
