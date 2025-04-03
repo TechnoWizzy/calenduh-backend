@@ -84,6 +84,8 @@ func Authorize(c *gin.Context) {
 		return
 	}
 
+	log.Println(c.Request.Header)
+
 	session, err := database.Db.Queries.GetSessionById(c, sessionId)
 	if err != nil {
 		c.Next()
