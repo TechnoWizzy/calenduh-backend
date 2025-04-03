@@ -1,3 +1,7 @@
+-- name: GetGroupMembers :many
+select * from group_members
+where group_id = $1;
+
 -- name: CreateGroupMember :exec
 insert into group_members (user_id, group_id)
 values ($1, $2);

@@ -122,22 +122,34 @@ func LeaveGroup(c *gin.Context) {
 		return
 	}
 
-	for _, group := range groups {
-		if groupId == group.GroupID {
-			if err := database.Db.Queries.DeleteGroupMember(c, sqlc.DeleteGroupMemberParams{
-				UserID:  user.UserID,
-				GroupID: group.GroupID,
-			}); err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
+	if err := database.Transaction(c, func(queries *sqlc.Queries) error {
+		for _, group := range groups {
+			members, err := queries.GetGroupMembers(c, group.GroupID)
+			if err != nil {
+				return err
 			}
+			if groupId == group.GroupID {
+				if err := queries.DeleteGroupMember(c, sqlc.DeleteGroupMemberParams{
+					UserID:  user.UserID,
+					GroupID: group.GroupID,
+				}); err != nil {
+					return err
+				}
 
-			c.Status(http.StatusOK)
-			return
+				if len(members) == 1 {
+					if err := queries.DeleteGroup(c, group.GroupID); err != nil {
+						return err
+					}
+				}
+
+				c.Status(http.StatusOK)
+				return nil
+			}
 		}
+		return errors.New("cannot leave group you are not in")
+	}); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
-
-	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "cannot leave group you are not in"})
 	return
 }
 
