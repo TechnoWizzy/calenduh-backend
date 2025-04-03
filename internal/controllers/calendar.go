@@ -261,11 +261,11 @@ func DeleteAllCalendars(c *gin.Context) {
 }
 
 func CanEditCalendar(calendar sqlc.Calendar, userId string, groups []sqlc.Group) bool {
-	if *calendar.UserID == userId {
+	if calendar.UserID != nil && *calendar.UserID == userId {
 		return true
 	} else {
 		for _, group := range groups {
-			if *calendar.GroupID == group.GroupID {
+			if calendar.GroupID != nil && *calendar.GroupID == group.GroupID {
 				return true
 			}
 		}
