@@ -15,6 +15,13 @@ inner join calendars c on u.user_id = c.user_id
 inner join events e on c.calendar_id = e.calendar_id
 where u.user_id = $1  and start_time < sqlc.arg(end_time);
 
+-- name: GetEventsByGroupId :many
+select e.*
+from groups g
+    inner join calendars c on g.group_id = c.group_id
+    inner join events e on c.calendar_id = e.calendar_id
+where g.group_id = $1  and start_time < sqlc.arg(end_time);
+
 -- name: GetEventByCalendarId :many
 select *
 from events

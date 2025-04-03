@@ -38,12 +38,14 @@ func GetAllEvents(c *gin.Context) {
 
 func GetUserEvents(c *gin.Context) {
 	user := *ParseUser(c)
+	groups := *ParseGroups(c)
 	start, end := ParseRange(c)
 
 	events, err := database.Db.Queries.GetEventsByUserId(c, sqlc.GetEventsByUserIdParams{
 		UserID:  user.UserID,
 		EndTime: *end,
 	})
+
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
@@ -52,6 +54,24 @@ func GetUserEvents(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
+	}
+
+	for _, group := range groups {
+		groupEvents, err := database.Db.Queries.GetEventsByGroupId(c, sqlc.GetEventsByGroupIdParams{
+			GroupID: group.GroupID,
+			EndTime: *end,
+		})
+
+		if err != nil {
+			switch {
+			case errors.Is(err, pgx.ErrNoRows):
+				c.JSON(http.StatusOK, make([]sqlc.Event, 0))
+			default:
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+		events = append(events, groupEvents...)
 	}
 
 	events, err = GenerateRecurrenceEvents(&events, start, end)
