@@ -89,6 +89,7 @@ func GetCalendarICal(c *gin.Context) {
 		icalEvent := cal.AddEvent(event.EventID)
 		icalEvent.SetSummary(event.Name)
 		icalEvent.SetColor(calendar.Color)
+		icalEvent.SetDtStampTime(time.Now().UTC())
 
 		if event.Description != nil {
 			icalEvent.SetDescription(*event.Description)
@@ -114,6 +115,9 @@ func GetCalendarICal(c *gin.Context) {
 	data := cal.Serialize()
 	c.Header("Content-Type", "text/calendar; charset=utf-8")
 	c.Header("Content-Disposition", "attachment; filename=\"calendar.ics\"")
+	c.Header("Cache-Control", "no-cache, no-store, must-revalidate") // Prevent aggressive caching
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
 	c.String(http.StatusOK, data)
 }
 
