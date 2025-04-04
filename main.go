@@ -45,9 +45,14 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:8081"}
+	// config.AllowOrigins = []string{"http://google.com", "http://facebook.com"}
+	// config.AllowAllOrigins = true
+
 	// Router setup
 	router := gin.Default()
-	router.Use(cors.Default())
+	router.Use(cors.New(config))
 	router.Use(gin.Recovery())
 	router.Use(controllers.Authorize)
 	router.GET("/health", func(c *gin.Context) {
