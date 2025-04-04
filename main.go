@@ -47,8 +47,8 @@ func main() {
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"http://localhost:8081"}
-	config.AllowMethods = []string{"GET", "PUT", "POST", "PATCH", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type"}
 	config.AllowCredentials = true
 	// config.AllowOrigins = []string{"http://google.com", "http://facebook.com"}
 	// config.AllowAllOrigins = true
