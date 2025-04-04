@@ -9,14 +9,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"io"
-	"log"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -123,70 +121,65 @@ func LoggedIn(c *gin.Context) {
 // @Summary Apple Login
 // @Description Handles the login from Apple SignIn and creates a session.
 func AppleLogin(c *gin.Context) {
-	var appleLoginBody AppleLoginBody
-	err := c.BindJSON(&appleLoginBody)
-	if err != nil {
-		message := gin.H{"message": "unable to parse body"}
-		c.AbortWithStatusJSON(http.StatusBadRequest, message)
-		return
-	}
+	if err := database.Transaction(c, func(queries *sqlc.Queries) error {
+		var appleLoginBody AppleLoginBody
+		err := c.BindJSON(&appleLoginBody)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, err)
+			return nil
+		}
 
-	spew.Dump(appleLoginBody)
-	token, err := verifyToken(appleLoginBody.IdentityToken)
+		token, err := verifyToken(appleLoginBody.IdentityToken)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, err)
+			return nil
+		}
 
-	if err != nil {
+		var email string
+		if appleLoginBody.Email != nil {
+			email = *appleLoginBody.Email
+		} else {
+			email = token.Claims.(jwt.MapClaims)["email"].(string)
+		}
+
+		user, err := queries.GetUserById(c, appleLoginBody.UserId)
+
+		if err != nil { // User does not exist yet
+			if errors.Is(err, pgx.ErrNoRows) {
+				username := strings.Split(email, "@")[0]
+
+				user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
+					UserID:   appleLoginBody.UserId,
+					Email:    email,
+					Username: username,
+				})
+
+				if err != nil {
+					return err
+				}
+			} else { // Failed to fetch user
+				return err
+			}
+		}
+
+		session, err := queries.InsertSession(c, sqlc.InsertSessionParams{
+			SessionID: gonanoid.Must(),
+			UserID:    user.UserID,
+			Type:      sqlc.SessionTypeAPPLE,
+		})
+
+		if err != nil { // Failed to create session
+			return err
+		}
+
+		c.PureJSON(http.StatusOK, gin.H{
+			"sessionId": session.SessionID,
+		})
+		return nil
+	}); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-
-	var email string
-	if appleLoginBody.Email != nil {
-		email = *appleLoginBody.Email
-	} else {
-		email = token.Claims.(jwt.MapClaims)["email"].(string)
-	}
-
-	user, err := database.Db.Queries.GetUserById(c, appleLoginBody.UserId)
-
-	if err != nil { // User does not exist yet
-		if errors.Is(err, pgx.ErrNoRows) {
-			username := strings.Split(email, "@")[0]
-
-			user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
-				UserID:   appleLoginBody.UserId,
-				Email:    email,
-				Username: username,
-			})
-
-			if err != nil {
-				message := gin.H{
-					"message": "unable to create new user",
-					"error":   err.Error(),
-				}
-				c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-				return
-			}
-		} else { // Failed to fetch user
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-	}
-
-	session, err := database.Db.Queries.InsertSession(c, sqlc.InsertSessionParams{
-		SessionID: gonanoid.Must(),
-		UserID:    user.UserID,
-		Type:      sqlc.SessionTypeAPPLE,
-	})
-
-	if err != nil { // Failed to create session
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	c.PureJSON(http.StatusOK, gin.H{
-		"sessionId": session.SessionID,
-	})
-	return
 }
 
 // GoogleLogin
@@ -221,144 +214,112 @@ func GoogleLogin(c *gin.Context) {
 // GoogleAuth
 // @Summary Google Auth
 func GoogleAuth(c *gin.Context) {
-	state := c.Query("state")
-	code := c.Query("code")
-	validated, redirectUri := util.ValidateNonce(state)
-	if !validated {
-		message := gin.H{"message": "invalid state"}
-		c.AbortWithStatusJSON(http.StatusBadRequest, message)
-		return
-	}
-
-	if code == "" {
-		message := gin.H{"message": "invalid code"}
-		c.AbortWithStatusJSON(http.StatusBadRequest, message)
-		return
-	}
-
-	client := resty.New()
-	googleTokenUrl := util.GetEnv("GOOGLE_OAUTH_TOKEN_URL")
-
-	resp, err := client.R().
-		SetFormData(map[string]string{
-			"client_id":     util.GetEnv("GOOGLE_CLIENT_ID"),
-			"client_secret": util.GetEnv("GOOGLE_CLIENT_SECRET"),
-			"redirect_uri":  util.GetProtocol(c) + c.Request.Host + util.GetEnv("GOOGLE_OAUTH_URI"),
-			"grant_type":    "authorization_code",
-			"code":          code,
-		}).
-		Post(googleTokenUrl)
-	if err != nil {
-		message := gin.H{
-			"message": "failed to acquire oauth token",
-			"error":   err.Error(),
+	if err := database.Transaction(c, func(queries *sqlc.Queries) error {
+		state := c.Query("state")
+		code := c.Query("code")
+		validated, redirectUri := util.ValidateNonce(state)
+		if !validated {
+			message := gin.H{"message": "invalid state"}
+			c.AbortWithStatusJSON(http.StatusBadRequest, message)
+			return nil
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	if resp.StatusCode() != http.StatusOK {
-		message := gin.H{"message": "invalid code"}
-		c.AbortWithStatusJSON(http.StatusBadRequest, message)
-		return
-	}
-
-	var tokenData TokenData
-	err = json.Unmarshal(resp.Body(), &tokenData)
-	if err != nil {
-		message := gin.H{
-			"message": "unable to unmarshal tokenData body",
-			"error":   err.Error(),
+		if code == "" {
+			message := gin.H{"message": "invalid code"}
+			c.AbortWithStatusJSON(http.StatusBadRequest, message)
+			return nil
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	googleApiUrl := util.GetEnv("GOOGLE_API_URL")
+		client := resty.New()
+		googleTokenUrl := util.GetEnv("GOOGLE_OAUTH_TOKEN_URL")
 
-	resp, err = client.R().
-		SetHeaders(map[string]string{
-			"Content-Type":  "application/json",
-			"Authorization": "Bearer " + tokenData.AccessToken,
-		}).
-		Get(googleApiUrl + "/oauth2/v3/userinfo")
-	if err != nil {
-		message := gin.H{
-			"message": "unable to retrieve user data",
-			"error":   err.Error(),
+		resp, err := client.R().
+			SetFormData(map[string]string{
+				"client_id":     util.GetEnv("GOOGLE_CLIENT_ID"),
+				"client_secret": util.GetEnv("GOOGLE_CLIENT_SECRET"),
+				"redirect_uri":  util.GetProtocol(c) + c.Request.Host + util.GetEnv("GOOGLE_OAUTH_URI"),
+				"grant_type":    "authorization_code",
+				"code":          code,
+			}).
+			Post(googleTokenUrl)
+		if err != nil {
+			return err
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	if resp.StatusCode() != http.StatusOK {
-		message := gin.H{
-			"message": "unable to retrieve user data",
-			"error":   resp.Body(),
+		if resp.StatusCode() != http.StatusOK {
+			message := gin.H{"message": "invalid code"}
+			c.AbortWithStatusJSON(http.StatusBadRequest, message)
+			return nil
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	var googleUser GoogleUser
-	err = json.Unmarshal(resp.Body(), &googleUser)
-	if err != nil {
-		message := gin.H{
-			"message": "unable to unmarshal googleUser body",
-			"error":   err.Error(),
+		var tokenData TokenData
+		err = json.Unmarshal(resp.Body(), &tokenData)
+		if err != nil {
+			return err
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	user, err := database.Db.Queries.GetUserById(c, googleUser.ID)
+		googleApiUrl := util.GetEnv("GOOGLE_API_URL")
 
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) { // User does not exist yet
-			username := strings.Split(googleUser.Email, "@")[0]
+		resp, err = client.R().
+			SetHeaders(map[string]string{
+				"Content-Type":  "application/json",
+				"Authorization": "Bearer " + tokenData.AccessToken,
+			}).
+			Get(googleApiUrl + "/oauth2/v3/userinfo")
+		if err != nil {
+			return err
+		}
 
-			user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
-				UserID:   googleUser.ID,
-				Email:    googleUser.Email,
-				Username: username,
-			})
+		if resp.StatusCode() != http.StatusOK {
+			return errors.New("unable to retrieve user data")
+		}
 
-			if err != nil {
-				message := gin.H{
-					"message": "unable to create new user",
-					"error":   err.Error(),
+		var googleUser GoogleUser
+		err = json.Unmarshal(resp.Body(), &googleUser)
+		if err != nil {
+			return err
+		}
+
+		user, err := database.Db.Queries.GetUserById(c, googleUser.ID)
+
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) { // User does not exist yet
+				username := strings.Split(googleUser.Email, "@")[0]
+
+				user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
+					UserID:   googleUser.ID,
+					Email:    googleUser.Email,
+					Username: username,
+				})
+
+				if err != nil {
+					return err
 				}
-				c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-				return
+			} else { // Failed to fetch user
+				return err
 			}
-		} else { // Failed to fetch user
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
 		}
-	}
 
-	session, err := database.Db.Queries.InsertSession(c, sqlc.InsertSessionParams{
-		SessionID:    gonanoid.Must(),
-		UserID:       user.UserID,
-		Type:         sqlc.SessionTypeGOOGLE,
-		AccessToken:  &tokenData.AccessToken,
-		RefreshToken: &tokenData.RefreshToken,
-		ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
-	})
+		session, err := database.Db.Queries.InsertSession(c, sqlc.InsertSessionParams{
+			SessionID:    gonanoid.Must(),
+			UserID:       user.UserID,
+			Type:         sqlc.SessionTypeGOOGLE,
+			AccessToken:  &tokenData.AccessToken,
+			RefreshToken: &tokenData.RefreshToken,
+			ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
+		})
 
-	if err != nil {
-		message := gin.H{
-			"message": "unable to execute query: CreateSession",
-			"error":   err.Error(),
+		if err != nil {
+			return err
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+
+		c.SetCookie("sessionId", session.SessionID, tokenData.ExpiresIn, "/", c.Request.Host, false, true)
+		c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionID)
+		return nil
+	}); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-
-	c.SetCookie("sessionId", session.SessionID, tokenData.ExpiresIn, "/",
-		c.Request.Host, false, true)
-
-	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionID)
 }
 
 // DiscordLogin
@@ -393,144 +354,113 @@ func DiscordLogin(c *gin.Context) {
 // DiscordAuth
 // @Summary Discord Auth
 func DiscordAuth(c *gin.Context) {
-	state := c.Query("state")
-	code := c.Query("code")
-	validated, redirectUri := util.ValidateNonce(state)
-	if !validated {
-		message := gin.H{"message": "invalid state"}
-		c.AbortWithStatusJSON(http.StatusBadRequest, message)
-		return
-	}
-
-	if code == "" {
-		message := gin.H{"message": "invalid code"}
-		c.AbortWithStatusJSON(http.StatusBadRequest, message)
-		return
-	}
-
-	client := resty.New()
-	discordTokenUrl := util.GetEnv("DISCORD_OAUTH_TOKEN_URL")
-
-	resp, err := client.R().
-		SetFormData(map[string]string{
-			"client_id":     util.GetEnv("DISCORD_CLIENT_ID"),
-			"client_secret": util.GetEnv("DISCORD_CLIENT_SECRET"),
-			"redirect_uri":  util.GetProtocol(c) + c.Request.Host + util.GetEnv("DISCORD_OAUTH_URI"),
-			"grant_type":    "authorization_code",
-			"code":          code,
-		}).
-		Post(discordTokenUrl)
-	if err != nil {
-		message := gin.H{
-			"message": "failed to acquire oauth token",
-			"error":   err.Error(),
+	if err := database.Transaction(c, func(queries *sqlc.Queries) error {
+		state := c.Query("state")
+		code := c.Query("code")
+		validated, redirectUri := util.ValidateNonce(state)
+		if !validated {
+			message := gin.H{"message": "invalid state"}
+			c.AbortWithStatusJSON(http.StatusBadRequest, message)
+			return nil
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	if resp.StatusCode() != http.StatusOK {
-		message := gin.H{"message": "invalid code"}
-		c.AbortWithStatusJSON(http.StatusBadRequest, message)
-		return
-	}
-
-	var tokenData TokenData
-	err = json.Unmarshal(resp.Body(), &tokenData)
-	if err != nil {
-		message := gin.H{
-			"message": "unable to unmarshal tokenData body",
-			"error":   err.Error(),
+		if code == "" {
+			message := gin.H{"message": "invalid code"}
+			c.AbortWithStatusJSON(http.StatusBadRequest, message)
+			return nil
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	discordApiUrl := util.GetEnv("DISCORD_API_URL")
+		client := resty.New()
+		discordTokenUrl := util.GetEnv("DISCORD_OAUTH_TOKEN_URL")
 
-	resp, err = client.R().
-		SetHeaders(map[string]string{
-			"Content-Type":  "application/json",
-			"Authorization": "Bearer " + tokenData.AccessToken,
-		}).
-		Get(discordApiUrl + "/users/@me")
-	if err != nil {
-		message := gin.H{
-			"message": "unable to retrieve user data",
-			"error":   err.Error(),
+		resp, err := client.R().
+			SetFormData(map[string]string{
+				"client_id":     util.GetEnv("DISCORD_CLIENT_ID"),
+				"client_secret": util.GetEnv("DISCORD_CLIENT_SECRET"),
+				"redirect_uri":  util.GetProtocol(c) + c.Request.Host + util.GetEnv("DISCORD_OAUTH_URI"),
+				"grant_type":    "authorization_code",
+				"code":          code,
+			}).
+			Post(discordTokenUrl)
+		if err != nil {
+			return err
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	if resp.StatusCode() != http.StatusOK {
-		message := gin.H{
-			"message": "unable to retrieve user data",
-			"error":   resp.Body(),
+		if resp.StatusCode() != http.StatusOK {
+			message := gin.H{"message": "invalid code"}
+			c.AbortWithStatusJSON(http.StatusBadRequest, message)
+			return nil
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	var discordUser DiscordUser
-	err = json.Unmarshal(resp.Body(), &discordUser)
-	if err != nil {
-		message := gin.H{
-			"message": "unable to unmarshal googleUser body",
-			"error":   err.Error(),
+		var tokenData TokenData
+		err = json.Unmarshal(resp.Body(), &tokenData)
+		if err != nil {
+			return err
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-		return
-	}
 
-	user, err := database.Db.Queries.GetUserById(c, discordUser.ID)
+		discordApiUrl := util.GetEnv("DISCORD_API_URL")
 
-	if err != nil { // User does not exist yet
-		if errors.Is(err, pgx.ErrNoRows) {
+		resp, err = client.R().
+			SetHeaders(map[string]string{
+				"Content-Type":  "application/json",
+				"Authorization": "Bearer " + tokenData.AccessToken,
+			}).
+			Get(discordApiUrl + "/users/@me")
+		if err != nil {
+			return err
+		}
 
-			user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
-				UserID:   discordUser.ID,
-				Email:    discordUser.Email,
-				Username: discordUser.Username,
-			})
+		if resp.StatusCode() != http.StatusOK {
+			return err
+		}
 
-			if err != nil {
-				message := gin.H{
-					"message": "unable to create new user",
-					"error":   err.Error(),
+		var discordUser DiscordUser
+		err = json.Unmarshal(resp.Body(), &discordUser)
+		if err != nil {
+			return err
+		}
+
+		user, err := database.Db.Queries.GetUserById(c, discordUser.ID)
+
+		if err != nil { // User does not exist yet
+			if errors.Is(err, pgx.ErrNoRows) {
+
+				user, err = database.Db.Queries.CreateUser(c, sqlc.CreateUserParams{
+					UserID:   discordUser.ID,
+					Email:    discordUser.Email,
+					Username: discordUser.Username,
+				})
+
+				if err != nil {
+					return err
 				}
-				c.AbortWithStatusJSON(http.StatusInternalServerError, message)
-				return
+			} else { // Failed to fetch user
+				return err
 			}
-		} else { // Failed to fetch user
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
 		}
-	}
 
-	session, err := database.Db.Queries.InsertSession(c, sqlc.InsertSessionParams{
-		SessionID:    gonanoid.Must(),
-		UserID:       user.UserID,
-		Type:         sqlc.SessionTypeDISCORD,
-		AccessToken:  &tokenData.AccessToken,
-		RefreshToken: &tokenData.RefreshToken,
-		ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
-	})
+		session, err := database.Db.Queries.InsertSession(c, sqlc.InsertSessionParams{
+			SessionID:    gonanoid.Must(),
+			UserID:       user.UserID,
+			Type:         sqlc.SessionTypeDISCORD,
+			AccessToken:  &tokenData.AccessToken,
+			RefreshToken: &tokenData.RefreshToken,
+			ExpiresOn:    time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second),
+		})
 
-	if err != nil {
-		message := gin.H{
-			"message": "unable to execute query: CreateSession",
-			"error":   err.Error(),
+		if err != nil {
+			return err
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, message)
+
+		c.SetCookie("sessionId", session.SessionID, tokenData.ExpiresIn, "/",
+			c.Request.Host, false, true)
+
+		c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionID)
+		return nil
+	}); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-
-	c.SetCookie("sessionId", session.SessionID, tokenData.ExpiresIn, "/",
-		c.Request.Host, false, true)
-
-	log.Print(*redirectUri)
-	c.Redirect(http.StatusTemporaryRedirect, *redirectUri+"?state="+state+"&sessionId="+session.SessionID)
 }
 
 // Logout
