@@ -374,6 +374,7 @@ func WithRange(c *gin.Context) {
 			start = startTime
 		} else {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
 	}
 
@@ -385,6 +386,7 @@ func WithRange(c *gin.Context) {
 			end = endTime
 		} else {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
 	}
 
