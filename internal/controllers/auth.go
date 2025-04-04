@@ -77,9 +77,12 @@ type DiscordUser struct {
 // If a user is on an active session their ID is attached to the request under user_id.
 func Authorize(c *gin.Context) {
 	sessionId, err := c.Cookie("sessionId")
-	if err != nil { // No session
-		c.Next()
-		return
+	if err != nil { // Check Auth
+		sessionId = c.GetHeader("Authorization")
+		if sessionId == "" {
+			c.Next()
+			return
+		}
 	}
 
 	session, err := database.Db.Queries.GetSessionById(c, sessionId)
