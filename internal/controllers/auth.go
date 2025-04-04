@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"io"
+	"log"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -81,9 +82,12 @@ func Authorize(c *gin.Context) {
 		sessionId = c.GetHeader("Authorization")
 		if sessionId == "" {
 			c.Next()
+			log.Println("No SessionId")
 			return
 		}
 	}
+
+	log.Println("SessionId: " + sessionId)
 
 	session, err := database.Db.Queries.GetSessionById(c, sessionId)
 	if err != nil {

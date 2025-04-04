@@ -189,7 +189,6 @@ func cleanup(server *http.Server) {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
-		log.Println("origin: ", origin)
 		if origin == "" {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
 		} else {
