@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"log"
 	"net/http"
 )
 
@@ -69,6 +70,7 @@ func UpdateUser(c *gin.Context) {
 
 	var updateUserParams sqlc.UpdateUserParams
 	if err := c.ShouldBindJSON(&updateUserParams); err != nil {
+		log.Println(err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -81,6 +83,7 @@ func UpdateUser(c *gin.Context) {
 		case errors.Is(err, pgx.ErrNoRows):
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		default:
+			log.Println(err.Error())
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
