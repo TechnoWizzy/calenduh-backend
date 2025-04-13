@@ -12,7 +12,7 @@ returning *;
 
 -- name: UpdateUser :one
 update users
-set email = $2, username = $3, birthday = $4, name = $5, default_calendar_id = $6
+set email = $2, username = $3, birthday = $4, name = $5, default_calendar_id = $6, is_24_hour = $7
 where user_id = $1
 returning *;
 

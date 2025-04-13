@@ -91,9 +91,33 @@ func UpdateUser(c *gin.Context) {
 
 func DeleteMe(c *gin.Context) {
 	user := *ParseUser(c)
-	if err := database.Db.Queries.DeleteUser(c, user.UserID); err != nil {
+	groups := *ParseGroups(c)
+	if err := database.Transaction(c, func(queries *sqlc.Queries) error {
+		for _, group := range groups {
+			groupMembers, err := queries.GetGroupMembers(c, group.GroupID)
+			if err != nil {
+				return err
+			}
+			if len(groupMembers) == 1 {
+				if err := queries.DeleteGroup(c, group.GroupID); err != nil {
+					return err
+				}
+			}
+		}
+
+		if err := database.Db.Queries.DeleteUser(c, user.UserID); err != nil {
+			switch {
+			case errors.Is(err, pgx.ErrNoRows):
+				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			default:
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return nil
+		}
+
+		return nil
+	}); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
 	}
 
 	c.PureJSON(http.StatusOK, gin.H{"status": "deleted"})
@@ -101,19 +125,48 @@ func DeleteMe(c *gin.Context) {
 
 func DeleteUser(c *gin.Context) {
 	userId := c.Param("user_id")
-	if userId == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
-		return
-	}
-
-	if err := database.Db.Queries.DeleteUser(c, userId); err != nil {
-		switch {
-		case errors.Is(err, pgx.ErrNoRows):
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "user not found"})
-		default:
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := database.Transaction(c, func(queries *sqlc.Queries) error {
+		if userId == "" {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+			return nil
 		}
-		return
+
+		groups, err := queries.GetGroupsByUserId(c, userId)
+		if err != nil {
+			switch {
+			case errors.Is(err, pgx.ErrNoRows):
+				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				return nil
+			default:
+				return err
+			}
+		}
+
+		for _, group := range groups {
+			groupMembers, err := queries.GetGroupMembers(c, group.GroupID)
+			if err != nil {
+				return err
+			}
+			if len(groupMembers) == 1 {
+				if err := queries.DeleteGroup(c, group.GroupID); err != nil {
+					return err
+				}
+			}
+		}
+
+		if err := database.Db.Queries.DeleteUser(c, userId); err != nil {
+			switch {
+			case errors.Is(err, pgx.ErrNoRows):
+				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			default:
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return nil
+		}
+
+		return nil
+	}); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
 	c.PureJSON(http.StatusOK, gin.H{"status": "deleted"})
