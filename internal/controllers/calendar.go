@@ -27,6 +27,21 @@ func GetAllCalendars(c *gin.Context) {
 	c.JSON(http.StatusOK, calendars)
 }
 
+func GetAllPublicCalendars(c *gin.Context) {
+	calendars, err := database.Db.Queries.GetAllPublicCalendars(c)
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			c.JSON(http.StatusOK, make([]sqlc.Calendar, 0))
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, calendars)
+}
+
 func GetCalendar(c *gin.Context) {
 	calendarId := c.Param("calendar_id")
 	if calendarId == "" {

@@ -54,14 +54,13 @@ func CreateGroup(c *gin.Context) {
 		var input sqlc.CreateGroupParams
 		if err := c.BindJSON(&input); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return err
+			return nil
 		}
 
 		input.GroupID = gonanoid.Must()
 
 		group, err := queries.CreateGroup(c, input)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return err
 		}
 
@@ -70,7 +69,6 @@ func CreateGroup(c *gin.Context) {
 			UserID:  user.UserID,
 		}
 		if err = queries.CreateGroupMember(c, params); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return err
 		}
 

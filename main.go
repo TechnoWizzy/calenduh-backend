@@ -99,7 +99,7 @@ func setupRoutes(router *gin.Engine) {
 	events := router.Group("/events")
 	groups := router.Group("/groups")
 	calendars := router.Group("/calendars")
-	_ = router.Group("/subscriptions")
+	subscriptions := router.Group("/subscriptions")
 	_ = router.Group("/groups/:group_id/members")
 	{ // Auth
 		authentication.POST("/apple/login", controllers.AppleLogin)
@@ -149,6 +149,7 @@ func setupRoutes(router *gin.Engine) {
 		calendars.GET("/", controllers.GetAllCalendars)                                          // List all calendars
 		calendars.GET("/@me", controllers.LoggedIn, controllers.GetUserCalendars)                // List all calendars owned by user
 		calendars.GET("/@groups", controllers.LoggedIn, controllers.GetAllGroupCalendars)        // List all calendars owned by user groups
+		calendars.GET("/@public", controllers.LoggedIn, controllers.GetAllPublicCalendars)       // List all public calendars
 		calendars.GET("/@groups/:group_id", controllers.LoggedIn, controllers.GetGroupCalendars) // List all calendars owned by a single user group
 		calendars.GET("/@subscribed", controllers.LoggedIn, controllers.GetSubscribedCalendars)  // List all the calendars subscribed to by user
 		calendars.GET("/:calendar_id", controllers.LoggedIn, controllers.GetCalendar)            // Get a specific calendar
@@ -160,10 +161,11 @@ func setupRoutes(router *gin.Engine) {
 		calendars.DELETE("/:calendar_id", controllers.LoggedIn, controllers.DeleteCalendar)      // Delete a calendar
 	}
 	{ // Subscriptions
-		//subscriptions.GET("/", controllers.GetAllSubscriptions)                        // List all subscriptions
-		//subscriptions.POST("/", controllers.CreateSubscription)                        // Create a new subscription
-		//subscriptions.GET("/:user_id/:calendar_id", controllers.GetSubscription)       // Get a specific subscription
-		//subscriptions.DELETE("/:user_id/:calendar_id", controllers.DeleteSubscription) // Delete a subscription
+		subscriptions.GET("/", controllers.GetAllSubscriptions) // List all subscriptions
+		subscriptions.POST("/", controllers.CreateSubscription) // Create a new subscription
+		//subscriptions.GET("/:user_id/:calendar_id", controllers.GetSubscription) // Get a specific subscription
+		subscriptions.DELETE("/:calendar_id", controllers.DeleteMySubscription)        // Delete a subscription
+		subscriptions.DELETE("/:user_id/:calendar_id", controllers.DeleteSubscription) // Delete a subscription
 	}
 	{ // GroupMembers
 		//groupMembers.GET("/", controllers.GetGroupMembers)              // List members of a group

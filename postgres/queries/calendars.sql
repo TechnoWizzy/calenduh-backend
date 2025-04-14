@@ -1,6 +1,10 @@
 -- name: GetAllCalendars :many
 select * from calendars;
 
+-- name: GetAllPublicCalendars :many
+select * from calendars
+where is_public = true;
+
 -- name: GetCalendarById :one
 select * from calendars
 where calendar_id = $1;
