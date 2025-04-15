@@ -165,7 +165,7 @@ func setupRoutes(router *gin.Engine) {
 		subscriptions.POST("/", controllers.CreateSubscription) // Create a new subscription
 		//subscriptions.GET("/:user_id/:calendar_id", controllers.GetSubscription) // Get a specific subscription
 		subscriptions.DELETE("/:calendar_id", controllers.DeleteMySubscription)        // Delete a subscription
-		subscriptions.DELETE("/:user_id/:calendar_id", controllers.DeleteSubscription) // Delete a subscription
+		subscriptions.DELETE("/:calendar_id/:user_id", controllers.DeleteSubscription) // Delete a subscription
 	}
 	{ // GroupMembers
 		//groupMembers.GET("/", controllers.GetGroupMembers)              // List members of a group
