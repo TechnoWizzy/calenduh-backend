@@ -21,7 +21,7 @@ where group_id = $1;
 select distinct c.* from users u
 inner join subscriptions s on u.user_id = s.user_id
 inner join calendars c on s.calendar_id = c.calendar_id
-where u.user_id = $1;
+where u.user_id = $1 and (c.is_public or c.invite_code = s.invite_code);
 
 -- name: CreateCalendar :one
 insert into calendars (calendar_id, user_id, group_id, title, color, is_public)
