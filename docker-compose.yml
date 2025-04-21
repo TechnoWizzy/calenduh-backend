@@ -35,5 +35,5 @@ services:
 
 networks:
   default:
-    name: network
+    name: calenduh-network
     driver: bridge
