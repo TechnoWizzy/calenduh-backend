@@ -28,3 +28,9 @@ where user_id = $1;
 -- name: DeleteAllUsers :exec
 delete from users
 where true;
+
+-- name: UpdateUserProfilePicture :one
+update users
+set profile_picture = $2
+where user_id = $1
+returning *;

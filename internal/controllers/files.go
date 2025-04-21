@@ -3,6 +3,7 @@ package controllers
 import (
 	"calenduh-backend/internal/database"
 	"calenduh-backend/internal/util"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -141,4 +142,19 @@ func isValidFileType(fileType string) bool {
 	}
 
 	return false
+}
+
+func GetProfilePictureURL(c *gin.Context) {
+    user := *ParseUser(c)
+    
+    if user.ProfilePicture == nil || *user.ProfilePicture == "" {
+        c.AbortWithStatus(http.StatusNotFound)
+        return
+    }
+
+    url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", 
+        util.GetEnv("AWS_BUCKET"),
+        *user.ProfilePicture)
+    
+    c.JSON(http.StatusOK, gin.H{"url": url})
 }
