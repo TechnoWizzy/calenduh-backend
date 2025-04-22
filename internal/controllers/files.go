@@ -162,18 +162,17 @@ func GetProfilePictureURL(c *gin.Context) {
 
 func UpdateProfilePicture(c *gin.Context) {
     user := *ParseUser(c)
-    key := c.Param("key")
-    
-    if key == "" {
-        c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "key is required"})
+    var request struct {
+        Key string `json:"key"`
+    }
+    if err := c.BindJSON(&request); err != nil {
+        c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
         return
     }
-    
     updatedUser, err := database.Db.Queries.UpdateUserProfilePicture(c, sqlc.UpdateUserProfilePictureParams{
         UserID:         user.UserID,
-        ProfilePicture: &key,
+        ProfilePicture: &request.Key,
     })
-	
     if err != nil {
         c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
