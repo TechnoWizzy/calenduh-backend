@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/matoous/go-nanoid/v2"
 	"net/http"
+	"calenduh-backend/internal/sqlc"
 )
 
 func UploadFile(c *gin.Context) {
@@ -157,4 +158,26 @@ func GetProfilePictureURL(c *gin.Context) {
         *user.ProfilePicture)
     
     c.JSON(http.StatusOK, gin.H{"url": url})
+}
+
+func UpdateProfilePicture(c *gin.Context) {
+    user := *ParseUser(c)
+    key := c.Param("key")
+    
+    if key == "" {
+        c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "key is required"})
+        return
+    }
+    
+	// Use the fully qualified package name
+    updatedUser, err := database.Db.Queries.UpdateUserProfilePicture(c, sqlc.UpdateUserProfilePictureParams{
+        UserID:         user.UserID,
+        ProfilePicture: &key,
+    })
+    if err != nil {
+        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, updatedUser)
 }
