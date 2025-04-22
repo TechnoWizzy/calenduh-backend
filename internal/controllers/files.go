@@ -169,15 +169,41 @@ func UpdateProfilePicture(c *gin.Context) {
         return
     }
     
-	// Use the fully qualified package name
     updatedUser, err := database.Db.Queries.UpdateUserProfilePicture(c, sqlc.UpdateUserProfilePictureParams{
         UserID:         user.UserID,
         ProfilePicture: &key,
     })
+	
     if err != nil {
         c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
     
     c.JSON(http.StatusOK, updatedUser)
+}
+
+func DeleteProfilePicture(c *gin.Context) {
+    user := *ParseUser(c)
+    
+    if user.ProfilePicture == nil || *user.ProfilePicture == "" {
+        c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "no profile picture to delete"})
+        return
+    }
+
+    if err := deleteFile(*user.ProfilePicture); err != nil {
+        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to delete file from storage"})
+        return
+    }
+
+    _, err := database.Db.Queries.UpdateUserProfilePicture(c, sqlc.UpdateUserProfilePictureParams{
+        UserID:         user.UserID,
+        ProfilePicture: nil,
+    })
+
+    if err != nil {
+        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.Status(http.StatusOK)
 }

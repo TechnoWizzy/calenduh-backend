@@ -111,8 +111,12 @@ func setupRoutes(router *gin.Engine) {
 		authentication.GET("/sessions", controllers.GetAllSessions)
 	}
 	{ // Files
-		files.POST("/:key", controllers.LoggedIn, controllers.UploadFile)   // Upload Profile Picture
-		files.DELETE("/:key", controllers.LoggedIn, controllers.DeleteFile) // Delete Profile Picture
+		// files.POST("/:key", controllers.LoggedIn, controllers.UploadFile)   // Upload Profile Picture
+		// files.DELETE("/:key", controllers.LoggedIn, controllers.DeleteFile) // Delete Profile Picture
+		files.POST("/upload", controllers.LoggedIn, controllers.UploadFile)
+		files.PUT("/profile", controllers.LoggedIn, controllers.UpdateProfilePicture)
+		files.DELETE("/profile", controllers.LoggedIn, controllers.DeleteProfilePicture)
+		files.GET("/profile/url", controllers.LoggedIn, controllers.GetProfilePictureURL)
 	}
 	{ // Users
 		users.GET("/", controllers.GetAllUsers)                                       // Get all users
