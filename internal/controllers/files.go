@@ -69,8 +69,20 @@ func UploadFile(c *gin.Context) {
 		return
 	}
 
-	c.PureJSON(http.StatusOK, key)
-	return
+    updatedUser, err := database.Db.Queries.UpdateUserProfilePicture(c, sqlc.UpdateUserProfilePictureParams{
+        UserID:         user.UserID,
+        ProfilePicture: &key,
+    })
+    if err != nil {
+        _ = deleteFile(key)
+        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to update profile picture, deleting file"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "key": key,
+        "user": updatedUser,
+    })
 }
 
 func DeleteFile(c *gin.Context) {
