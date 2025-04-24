@@ -14,6 +14,11 @@ import (
 )
 
 func UploadFile(c *gin.Context) {
+	if c.Get("user") == nil {
+		console.log.Error("user not found!!!!")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	user := *ParseUser(c)
 	file, err := c.FormFile("file")
 	if err != nil {
