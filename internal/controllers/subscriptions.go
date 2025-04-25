@@ -34,6 +34,18 @@ func CreateSubscription(c *gin.Context) {
 
 	input.UserID = user.UserID
 
+	if input.CalendarID == "" {
+		if input.InviteCode == nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "missing invite code"})
+			return
+		}
+		_, err := database.Db.Queries.GetCalendarByInviteCode(c, *input.InviteCode)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "calendar not found"})
+			return
+		}
+	}
+
 	if err := database.Db.Queries.CreateSubscription(c, input); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

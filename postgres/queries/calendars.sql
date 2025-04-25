@@ -17,6 +17,10 @@ where user_id = $1;
 select * from calendars
 where group_id = $1;
 
+-- name: GetCalendarByInviteCode :one
+select * from calendars
+where invite_code = $1;
+
 -- name: GetSubscribedCalendars :many
 select distinct c.* from users u
 inner join subscriptions s on u.user_id = s.user_id
