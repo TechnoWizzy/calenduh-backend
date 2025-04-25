@@ -39,11 +39,13 @@ func CreateSubscription(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "missing invite code"})
 			return
 		}
-		_, err := database.Db.Queries.GetCalendarByInviteCode(c, *input.InviteCode)
+		calendar, err := database.Db.Queries.GetCalendarByInviteCode(c, *input.InviteCode)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "calendar not found"})
 			return
 		}
+
+		input.CalendarID = calendar.CalendarID
 	}
 
 	if err := database.Db.Queries.CreateSubscription(c, input); err != nil {
