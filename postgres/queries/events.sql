@@ -11,9 +11,9 @@ where event_id = $1;
 -- name: GetEventsByUserId :many
 select e.*
 from users u
-join group_members gm on u.user_id = gm.user_id
-join subscriptions s on u.user_id = s.user_id
-join calendars c on u.user_id = c.user_id or s.calendar_id = c.calendar_id or gm.group_id = c.calendar_id
+left join group_members gm on u.user_id = gm.user_id
+left join subscriptions s on u.user_id = s.user_id
+left join calendars c on (u.user_id = c.user_id or s.calendar_id = c.calendar_id or gm.group_id = c.calendar_id)
 inner join events e on c.calendar_id = e.calendar_id
 where u.user_id = $1  and start_time < sqlc.arg(end_time);
 
