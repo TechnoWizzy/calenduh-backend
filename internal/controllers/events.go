@@ -427,7 +427,7 @@ func GenerateRecurrenceEvents(events *[]sqlc.Event, start, end *time.Time) ([]sq
 				if nextEvent.StartTime.After(*start) && nextEvent.StartTime.Before(*end) {
 					includedEvents = append(includedEvents, nextEvent)
 				}
-				if len(*events) > 1000 {
+				if len(*events) > 200 {
 					break
 				}
 			}
