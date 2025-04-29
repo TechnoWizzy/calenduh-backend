@@ -132,7 +132,7 @@ func GetCalendarICal(c *gin.Context, calendarId string) {
 		}
 	}
 
-	data := cal.Serialize("\r\n")
+	data := cal.Serialize("\n")
 	c.Header("Content-Type", "text/calendar; charset=utf-8")
 	c.Header("Content-Disposition", "attachment; filename=\"calendar.ics\"")
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate") // Prevent aggressive caching
