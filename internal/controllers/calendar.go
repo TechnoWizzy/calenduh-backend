@@ -98,7 +98,7 @@ func GetCalendarICal(c *gin.Context) {
 	cal := ics.NewCalendar()
 	cal.SetMethod(ics.MethodPublish)
 	cal.SetDescription("Generated calendar for " + calendar.Title)
-	cal.SetProductId("-//Calenduh//Calenduh//EN")
+	cal.SetProductId("Calenduh Services 2025")
 
 	for _, event := range events {
 		icalEvent := cal.AddEvent(event.EventID)
