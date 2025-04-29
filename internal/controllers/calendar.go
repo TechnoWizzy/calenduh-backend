@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -49,6 +50,11 @@ func GetCalendar(c *gin.Context) {
 		return
 	}
 
+	if strings.HasSuffix(calendarId, ".ical") {
+		GetCalendarICal(c, strings.TrimSuffix(calendarId, ".ical"))
+		return
+	}
+
 	calendar, err := database.Db.Queries.GetCalendarById(c, calendarId)
 	if err != nil {
 		switch {
@@ -63,8 +69,7 @@ func GetCalendar(c *gin.Context) {
 	c.JSON(http.StatusOK, calendar)
 }
 
-func GetCalendarICal(c *gin.Context) {
-	calendarId := c.Param("calendar_id")
+func GetCalendarICal(c *gin.Context, calendarId string) {
 	if calendarId == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
 		return
