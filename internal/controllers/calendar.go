@@ -111,11 +111,11 @@ func GetCalendarICal(c *gin.Context, calendarId string) {
 		icalEvent.SetColor(calendar.Color)
 		icalEvent.SetDtStampTime(time.Now().UTC())
 
-		if event.Description != nil {
+		if event.Description != nil && *event.Description != "" {
 			icalEvent.SetDescription(*event.Description)
 		}
 
-		if event.Location != nil {
+		if event.Location != nil && *event.Location != "" {
 			icalEvent.SetLocation(*event.Location)
 		}
 
