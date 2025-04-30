@@ -112,7 +112,7 @@ func setupRoutes(router *gin.Engine) {
 	}
 	{ // Files
 		// files.POST("/:key", controllers.LoggedIn, controllers.UploadFile)   // Upload Profile Picture
-		// files.DELETE("/:key", controllers.LoggedIn, controllers.DeleteFile) // Delete Profile Picture
+		// files.DEL$ETE("/:key", controllers.LoggedIn, controllers.DeleteFile) // Delete Profile Picture
 		files.POST("/upload", controllers.LoggedIn, controllers.UploadFile)
 		files.PUT("/profile", controllers.LoggedIn, controllers.UpdateProfilePicture)
 		files.DELETE("/profile", controllers.LoggedIn, controllers.DeleteProfilePicture)
