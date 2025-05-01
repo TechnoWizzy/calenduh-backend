@@ -13,6 +13,7 @@ import (
 	"calenduh-backend/internal/sqlc"
 )
 
+// this function specifically uploads profile pictures
 func UploadFile(c *gin.Context) {
 	user := *ParseUser(c)
 	file, err := c.FormFile("file")
@@ -83,6 +84,157 @@ func UploadFile(c *gin.Context) {
         "key": key,
         "user": updatedUser,
     })
+}
+
+// this function uploads images in general (not only profile pictures)
+func UploadFileNotAProfilePicture(c *gin.Context) {
+	user := *ParseUser(c)
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if file.Size > 10<<20 {
+		c.AbortWithStatus(http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	if !isValidFileType(file.Header.Get("Content-Type")) {
+		message := gin.H{"message": "File type must be JPEG, PNG, WEBP"}
+		c.AbortWithStatusJSON(http.StatusUnsupportedMediaType, message)
+		return
+	}
+
+	client, err := GetS3Client()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	key := c.Query("key")
+	if key == "" {
+		key, err = gonanoid.New()
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+	} else {
+		if *user.ProfilePicture != key {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "key does not match"})
+			return
+		}
+	}
+
+	buffer, err := file.Open()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	_, err = client.PutObject(&s3.PutObjectInput{
+		Body:         buffer,
+		Bucket:       aws.String(util.GetEnv("AWS_BUCKET")),
+		Key:          aws.String(key),
+		StorageClass: aws.String("GLACIER_IR"),
+	})
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.PureJSON(http.StatusOK, key)
+	return
+}
+
+
+func CreateEventImage(c *gin.Context) {
+	user := *ParseUser(c)
+	
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	calendarId := c.Param("calendar_id")
+	if calendarId == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
+		return
+	}
+
+	if file.Size > 10<<20 {
+		c.AbortWithStatus(http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	if !isValidFileType(file.Header.Get("Content-Type")) {
+		message := gin.H{"message": "File type must be JPEG, PNG, WEBP"}
+		c.AbortWithStatusJSON(http.StatusUnsupportedMediaType, message)
+		return
+	}
+
+	client, err := GetS3Client()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	key := c.Query("key")
+	if key == "" {
+		key, err = gonanoid.New()
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+	} else {
+		if *user.ProfilePicture != key {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "key does not match"})
+			return
+		}
+	}
+
+	buffer, err := file.Open()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	_, err = client.PutObject(&s3.PutObjectInput{
+		Body:         buffer,
+		Bucket:       aws.String(util.GetEnv("AWS_BUCKET")),
+		Key:          aws.String(key),
+		StorageClass: aws.String("GLACIER_IR"),
+	})
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// TODO: FIXXXXXXXXXX
+    updatedUser, err := database.Db.Queries.UpdateEventImage(c, sqlc.UpdateEventImageParams{
+        CalendarID: 	   calendarId,
+        Img: &key,
+    })
+
+    if err != nil {
+        _ = deleteFile(key)
+        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to update profile picture, deleting file"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "key": key,
+        "user": updatedUser,
+    })
+}
+
+func DeleteEventImage(c *gin.Context) {
+	// todo
+}
+
+func UpdateEventImage(c *gin.Context) {
+	// todo
 }
 
 func DeleteFile(c *gin.Context) {

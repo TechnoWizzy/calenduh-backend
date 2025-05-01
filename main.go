@@ -112,12 +112,15 @@ func setupRoutes(router *gin.Engine) {
 	}
 	{ // Files
 		// files.POST("/:key", controllers.LoggedIn, controllers.UploadFile)   // Upload Profile Picture
-		// files.DEL$ETE("/:key", controllers.LoggedIn, controllers.DeleteFile) // Delete Profile Picture
+		// files.DELETE("/:key", controllers.LoggedIn, controllers.DeleteFile) // Delete Profile Picture
 		files.POST("/upload", controllers.LoggedIn, controllers.UploadFile)
-		files.PUT("/profile", controllers.LoggedIn, controllers.UpdateProfilePicture)
+		files.POST("/uploadFile", controllers.LoggedIn, controllers.UploadFileNotAProfilePicture)
+		files.PUT("/profile", controllers.LoggedIn, controllers.UpdateProfilePicture) // note: unused I think
 		files.DELETE("/profile", controllers.LoggedIn, controllers.DeleteProfilePicture)
 		files.GET("/profile/url", controllers.LoggedIn, controllers.GetProfilePictureURL)
-
+		files.POST("/uploadEventImage/:calendar_id/:event_id", controllers.LoggedIn, controllers.CreateEventImage)
+		files.PUT("/updateEventImage/:calendar_id/:event_id", controllers.LoggedIn, controllers.UpdateEventImage)
+		files.DELETE("/deleteEventImage/:calendar_id/:event_id", controllers.LoggedIn, controllers.DeleteEventImage)
 	}
 	{ // Users
 		users.GET("/", controllers.GetAllUsers)                                       // Get all users

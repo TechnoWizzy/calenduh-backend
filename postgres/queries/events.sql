@@ -47,3 +47,9 @@ where event_id = $1 and calendar_id = $2;
 -- name: DeleteAllEvents :exec
 delete from events
 where true;
+
+-- name: UpdateEventImage :one
+update events
+set img = $3
+where event_id = $1 and calendar_id = $2
+returning *;
