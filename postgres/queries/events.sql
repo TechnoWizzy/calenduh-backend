@@ -30,8 +30,8 @@ from events
 where calendar_id = $1 and start_time < sqlc.arg(end_time);
 
 -- name: CreateEvent :one
-insert into events (event_id, calendar_id, name, location, description, notification, frequency, priority, start_time, end_time, all_day, first_notification, second_notification)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+insert into events (event_id, calendar_id, name, location, description, notification, frequency, priority, start_time, end_time, all_day, first_notification, second_notification, img)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 returning *;
 
 -- name: UpdateEvent :one
