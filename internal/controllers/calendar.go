@@ -30,27 +30,6 @@ func GetAllCalendars(c *gin.Context) {
 		return
 	}
 
-	for i, calendar := range calendars {
-		if calendar.IsWebBased {
-			_, found := util.WebCalendars.Get(calendar.CalendarID)
-			if !found {
-				cal, err := ics.ParseCalendarFromUrl(*calendar.Url)
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-					return
-				}
-
-				parsedCalendar, err := SaveICal(c, cal, true, calendar.Url)
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-					return
-				}
-
-				calendars[i] = *parsedCalendar
-			}
-		}
-	}
-
 	c.JSON(http.StatusOK, calendars)
 }
 
