@@ -5,6 +5,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
+COPY *.xml ./
 COPY *.go ./
 COPY internal/ internal/
 COPY .env ./

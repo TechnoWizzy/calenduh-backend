@@ -517,8 +517,39 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 
 	log.Printf("%d events on calendar\n", len(cal.Events()))
 	createdEvents := 0
-	for _, e := range cal.Events() {
 
+	for _, e := range cal.Events() {
+		// Patch TZID for DTSTART
+		dtstart := e.GetProperty(ics.ComponentPropertyDtStart)
+		if dtstart != nil {
+			tzids := dtstart.ICalParameters["TZID"]
+			if len(tzids) > 0 {
+				mapped := util.GetTimezone(tzids[0])
+				if mapped != "" && mapped != tzids[0] {
+					dtstart.ICalParameters["TZID"][0] = mapped
+				} else if mapped == "" {
+					log.Printf("Unknown time zone: %s, skipping event %s", tzids[0], e.GetProperty(ics.ComponentPropertyUniqueId).Value)
+					continue // skip this event
+				}
+			}
+		}
+
+		// Patch TZID for DTEND (optional, but recommended)
+		dtend := e.GetProperty(ics.ComponentPropertyDtEnd)
+		if dtend != nil {
+			tzids := dtend.ICalParameters["TZID"]
+			if len(tzids) > 0 {
+				mapped := util.GetTimezone(tzids[0])
+				if mapped != "" && mapped != tzids[0] {
+					dtend.ICalParameters["TZID"][0] = mapped
+				} else if mapped == "" {
+					log.Printf("Unknown time zone: %s, skipping event %s", tzids[0], e.GetProperty(ics.ComponentPropertyUniqueId).Value)
+					continue // skip this event
+				}
+			}
+		}
+
+		// Now, safely get start/end times
 		start, err := e.GetStartAt()
 		if err != nil {
 			start, err = e.GetAllDayStartAt()
@@ -535,6 +566,7 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 				continue
 			}
 		}
+
 		desc := e.GetProperty(ics.ComponentPropertyDescription)
 		loc := e.GetProperty(ics.ComponentPropertyLocation)
 		priority := e.GetProperty(ics.ComponentPropertyPriority)
@@ -580,10 +612,12 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 			Priority:    priorityPtr,
 		})
 		if err != nil {
+			// handle error if needed
 		} else {
 			createdEvents++
 		}
 	}
+
 	log.Printf("%d events created\n", createdEvents)
 
 	return &calendar, nil
