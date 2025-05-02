@@ -170,11 +170,11 @@ func setupRoutes(router *gin.Engine) {
 		calendars.DELETE("/:calendar_id", controllers.LoggedIn, controllers.DeleteCalendar)      // Delete a calendar
 	}
 	{ // Subscriptions
-		subscriptions.GET("/", controllers.GetAllSubscriptions) // List all subscriptions
-		subscriptions.POST("/", controllers.CreateSubscription) // Create a new subscription
+		subscriptions.GET("/", controllers.GetAllSubscriptions)                       // List all subscriptions
+		subscriptions.POST("/", controllers.LoggedIn, controllers.CreateSubscription) // Create a new subscription
 		//subscriptions.GET("/:user_id/:calendar_id", controllers.GetSubscription) // Get a specific subscription
-		subscriptions.DELETE("/:calendar_id", controllers.DeleteMySubscription)        // Delete a subscription
-		subscriptions.DELETE("/:calendar_id/:user_id", controllers.DeleteSubscription) // Delete a subscription
+		subscriptions.DELETE("/:calendar_id", controllers.LoggedIn, controllers.DeleteMySubscription) // Delete a subscription
+		subscriptions.DELETE("/:calendar_id/:user_id", controllers.DeleteSubscription)                // Delete a subscription
 	}
 	{ // GroupMembers
 		//groupMembers.GET("/", controllers.GetGroupMembers)              // List members of a group
