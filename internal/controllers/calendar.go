@@ -518,13 +518,22 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 	log.Printf("%d events on calendar\n", len(cal.Events()))
 	createdEvents := 0
 	for _, e := range cal.Events() {
+
 		start, err := e.GetStartAt()
 		if err != nil {
-			continue
+			start, err = e.GetAllDayStartAt()
+			if err != nil {
+				log.Printf("Error getting start time: %s\n", err.Error())
+				continue
+			}
 		}
 		end, err := e.GetEndAt()
 		if err != nil {
-			continue
+			end, err = e.GetAllDayEndAt()
+			if err != nil {
+				log.Printf("Error getting end time: %s\n", err.Error())
+				continue
+			}
 		}
 		desc := e.GetProperty(ics.ComponentPropertyDescription)
 		loc := e.GetProperty(ics.ComponentPropertyLocation)
