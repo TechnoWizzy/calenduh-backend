@@ -30,6 +30,27 @@ func GetAllCalendars(c *gin.Context) {
 		return
 	}
 
+	for i, calendar := range calendars {
+		if calendar.IsWebBased {
+			_, found := util.WebCalendars.Get(calendar.CalendarID)
+			if !found {
+				cal, err := ics.ParseCalendarFromUrl(*calendar.Url)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
+				}
+
+				parsedCalendar, err := SaveICal(c, cal, true, calendar.Url)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				calendars[i] = *parsedCalendar
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, calendars)
 }
 
@@ -69,6 +90,25 @@ func GetCalendar(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
+	}
+
+	if calendar.IsWebBased {
+		_, found := util.WebCalendars.Get(calendar.CalendarID)
+		if !found {
+			cal, err := ics.ParseCalendarFromUrl(*calendar.Url)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+
+			parsedCalendar, err := SaveICal(c, cal, true, calendar.Url)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			calendar = *parsedCalendar
+		}
 	}
 
 	c.JSON(http.StatusOK, calendar)
@@ -158,6 +198,27 @@ func GetUserCalendars(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
+	}
+
+	for i, calendar := range calendars {
+		if calendar.IsWebBased {
+			_, found := util.WebCalendars.Get(calendar.CalendarID)
+			if !found {
+				cal, err := ics.ParseCalendarFromUrl(*calendar.Url)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
+				}
+
+				parsedCalendar, err := SaveICal(c, cal, true, calendar.Url)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				calendars[i] = *parsedCalendar
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, calendars)
@@ -467,6 +528,7 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 		Color:      "#4285F4",
 		IsImported: !isWebBased,
 		IsWebBased: isWebBased,
+		IsPublic:   false,
 		Url:        url,
 	})
 	if err != nil {
