@@ -551,12 +551,18 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 		}
 
 		eventID := e.GetProperty(ics.ComponentPropertyUniqueId).Value
+		name := e.GetProperty(ics.ComponentPropertySummary).Value
+
+		log.Printf("ID: %s\n", eventID)
+		log.Printf("Name: %s\n", name)
+		log.Printf("Desc: %s\n", desc)
+		log.Printf("Event: %s\n", eventID)
 
 		_ = database.Db.Queries.DeleteEvent(c, eventID)
 		_, err = database.Db.Queries.CreateEvent(c, sqlc.CreateEventParams{
 			EventID:     eventID,
 			CalendarID:  calendar.CalendarID,
-			Name:        e.GetProperty(ics.ComponentPropertySummary).Value,
+			Name:        name,
 			Description: descPtr,
 			Location:    locPtr,
 			StartTime:   start,
