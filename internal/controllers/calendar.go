@@ -528,7 +528,7 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 				if mapped != "" && mapped != tzids[0] {
 					dtstart.ICalParameters["TZID"][0] = mapped
 				} else if mapped == "" {
-					log.Printf("Unknown time zone: %s, skipping event %s", tzids[0], e.GetProperty(ics.ComponentPropertyUniqueId).Value)
+					//log.Printf("Unknown time zone: %s, skipping event %s", tzids[0], e.GetProperty(ics.ComponentPropertyUniqueId).Value)
 					continue // skip this event
 				}
 			}
@@ -543,7 +543,7 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 				if mapped != "" && mapped != tzids[0] {
 					dtend.ICalParameters["TZID"][0] = mapped
 				} else if mapped == "" {
-					log.Printf("Unknown time zone: %s, skipping event %s", tzids[0], e.GetProperty(ics.ComponentPropertyUniqueId).Value)
+					//log.Printf("Unknown time zone: %s, skipping event %s", tzids[0], e.GetProperty(ics.ComponentPropertyUniqueId).Value)
 					continue // skip this event
 				}
 			}
@@ -593,11 +593,6 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 
 		eventID := e.GetProperty(ics.ComponentPropertyUniqueId).Value
 		name := e.GetProperty(ics.ComponentPropertySummary).Value
-
-		log.Printf("ID: %s\n", eventID)
-		log.Printf("Name: %s\n", name)
-		log.Printf("Desc: %s\n", desc)
-		log.Printf("Event: %s\n", eventID)
 
 		_ = database.Db.Queries.DeleteEvent(c, eventID)
 		_, err = database.Db.Queries.CreateEvent(c, sqlc.CreateEventParams{
