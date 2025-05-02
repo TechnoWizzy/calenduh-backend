@@ -3,7 +3,7 @@ select * from calendars;
 
 -- name: GetAllPublicCalendars :many
 select * from calendars
-where is_public = true;
+where is_public = true and group_id is null;
 
 -- name: GetCalendarById :one
 select * from calendars
