@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 type SupplementalData struct {
@@ -55,6 +56,10 @@ func init() {
 
 	Timezones = make(map[string]string)
 	for _, zone := range supplementalData.WindowsZones.MapTimezones.MapZones {
-		Timezones[zone.Other] = zone.Type
+		iana := zone.Type
+		if idx := strings.Index(iana, " "); idx != -1 {
+			iana = iana[:idx]
+		}
+		Timezones[zone.Other] = iana
 	}
 }
