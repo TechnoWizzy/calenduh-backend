@@ -82,12 +82,9 @@ func Authorize(c *gin.Context) {
 		sessionId = c.GetHeader("Authorization")
 		if sessionId == "" {
 			c.Next()
-			log.Println("No SessionId")
 			return
 		}
 	}
-
-	log.Println("SessionId: " + sessionId)
 
 	session, err := database.Db.Queries.GetSessionById(c, sessionId)
 	if err != nil {
