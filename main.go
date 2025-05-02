@@ -163,6 +163,8 @@ func setupRoutes(router *gin.Engine) {
 		calendars.GET("/:calendar_id", controllers.GetCalendar)                                  // Get a specific calendar
 		calendars.POST("/", controllers.LoggedIn, controllers.CreateUserCalendar)                // Create a new user calendar
 		calendars.POST("/:group_id", controllers.LoggedIn, controllers.CreateGroupCalendar)      // Create a new group calendar
+		calendars.POST("/import", controllers.LoggedIn, controllers.ImportICal)                  // Import Calendar from iCal
+		calendars.POST("/import/web", controllers.LoggedIn, controllers.SubscribeICal)           // Subscribe to remote iCal
 		calendars.PUT("/:calendar_id", controllers.LoggedIn, controllers.UpdateCalendar)         // Update a calendar
 		calendars.DELETE("/@all", controllers.DeleteAllCalendars)                                // Delete all calendars
 		calendars.DELETE("/:calendar_id", controllers.LoggedIn, controllers.DeleteCalendar)      // Delete a calendar

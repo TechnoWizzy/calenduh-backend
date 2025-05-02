@@ -42,7 +42,7 @@ returning *;
 
 -- name: DeleteEvent :exec
 delete from events
-where event_id = $1 and calendar_id = $2;
+where event_id = $1;
 
 -- name: DeleteAllEvents :exec
 delete from events

@@ -28,8 +28,8 @@ inner join calendars c on s.calendar_id = c.calendar_id
 where u.user_id = $1 and (c.is_public or c.invite_code = s.invite_code);
 
 -- name: CreateCalendar :one
-insert into calendars (calendar_id, user_id, group_id, title, color, is_public)
-values ($1, $2, $3, $4, $5, $6)
+insert into calendars (calendar_id, user_id, group_id, title, color, is_public, is_imported, is_web_based, url)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 returning *;
 
 -- name: DeleteCalendar :exec

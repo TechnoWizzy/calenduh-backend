@@ -13,6 +13,7 @@ var CachePath = "/var/lib/cache/"
 var Nonces = CreateCache(5*time.Minute, time.Minute, "nonces")
 var DailyUsers = CreateCache(24*time.Hour, time.Minute, "daily")
 var ActiveUsers = CreateCache(15*time.Minute, time.Minute, "active")
+var WebCalendars = CreateCache(1*time.Hour, time.Minute, "web-calendars")
 
 func CreateCache(defaultExpiration time.Duration, cleanupInterval time.Duration, name string) *cache.Cache {
 	file, err := os.ReadFile(CachePath + name)

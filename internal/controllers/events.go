@@ -258,12 +258,7 @@ func DeleteEvent(c *gin.Context) {
 		return
 	}
 
-	deleteEventParams := sqlc.DeleteEventParams{
-		CalendarID: calendarId,
-		EventID:    eventId,
-	}
-
-	calendar, err := database.Db.Queries.GetCalendarById(c, deleteEventParams.CalendarID)
+	calendar, err := database.Db.Queries.GetCalendarById(c, calendarId)
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
@@ -279,7 +274,7 @@ func DeleteEvent(c *gin.Context) {
 		return
 	}
 
-	if err = database.Db.Queries.DeleteEvent(c.Request.Context(), deleteEventParams); err != nil {
+	if err = database.Db.Queries.DeleteEvent(c.Request.Context(), eventId); err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "event not found"})
@@ -319,18 +314,12 @@ func PruneEvents(c *gin.Context) {
 
 				date := expr.Next(now)
 				if date.Before(now) {
-					if err := queries.DeleteEvent(c, sqlc.DeleteEventParams{
-						EventID:    event.EventID,
-						CalendarID: event.CalendarID,
-					}); err != nil {
+					if err := queries.DeleteEvent(c, event.EventID); err != nil {
 						return err
 					}
 				}
 			} else {
-				if err := queries.DeleteEvent(c, sqlc.DeleteEventParams{
-					EventID:    event.EventID,
-					CalendarID: event.CalendarID,
-				}); err != nil {
+				if err := queries.DeleteEvent(c, event.EventID); err != nil {
 					return err
 				}
 			}

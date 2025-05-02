@@ -3,12 +3,17 @@ package controllers
 import (
 	"calenduh-backend/internal/database"
 	"calenduh-backend/internal/sqlc"
+	"calenduh-backend/internal/util"
 	"errors"
 	"github.com/arran4/golang-ical"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -102,6 +107,7 @@ func GetCalendarICal(c *gin.Context, calendarId string) {
 
 	cal := ics.NewCalendar()
 	cal.SetMethod(ics.MethodPublish)
+	cal.SetXWRCalID(calendar.CalendarID)
 	cal.SetDescription("Generated Calendar: " + calendar.Title)
 	cal.SetProductId("Calenduh Services 2025")
 
@@ -367,4 +373,151 @@ func CanEditCalendar(calendar sqlc.Calendar, userId string, groups []sqlc.Group)
 	}
 
 	return false
+}
+
+func ImportICal(c *gin.Context) {
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+		return
+	}
+	defer func(file multipart.File) {
+		err := file.Close()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to close file"})
+		}
+	}(file)
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read file"})
+		return
+	}
+
+	cal, err := ics.ParseCalendar(strings.NewReader(string(data)))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ical format"})
+		return
+	}
+
+	calendar, err := SaveICal(c, cal, false, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.PureJSON(http.StatusOK, calendar)
+}
+
+func SubscribeICal(c *gin.Context) {
+	type SubscribeICalParams struct {
+		Url string `json:"url"`
+	}
+
+	var params SubscribeICalParams
+	if err := c.ShouldBindJSON(&params); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	cal, err := ics.ParseCalendarFromUrl(params.Url)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	calendar, err := SaveICal(c, cal, true, &params.Url)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.PureJSON(http.StatusOK, calendar)
+}
+
+func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (*sqlc.Calendar, error) {
+	user := *ParseUser(c)
+	var calName, calID string
+
+	for _, prop := range cal.CalendarProperties {
+		switch prop.IANAToken {
+		case "X-WR-CALNAME":
+			calName = prop.Value
+		case "X-CALENDAR-ID":
+			calID = prop.Value
+		}
+	}
+	if calName == "" {
+		calName = "Imported Calendar"
+	}
+	if calID == "" {
+		// Generate or require a calendar ID
+		calID = uuid.New().String()
+	}
+
+	if isWebBased {
+		util.WebCalendars.Set(calID, cal, 0)
+	}
+
+	_ = database.Db.Queries.DeleteCalendar(c, calID) // Delete old calendar if it exists somehow
+	calendar, err := database.Db.Queries.CreateCalendar(c, sqlc.CreateCalendarParams{
+		CalendarID: calID,
+		UserID:     &user.UserID,
+		Title:      calName,
+		Color:      "#4285F4",
+		IsImported: !isWebBased,
+		IsWebBased: isWebBased,
+		Url:        url,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, e := range cal.Events() {
+		start, _ := e.GetStartAt()
+		end, _ := e.GetEndAt()
+		desc := e.GetProperty(ics.ComponentPropertyDescription)
+		loc := e.GetProperty(ics.ComponentPropertyLocation)
+		priority := e.GetProperty(ics.ComponentPropertyPriority)
+		allDay := e.GetProperty(ics.ComponentPropertyDtStart).Value == "DATE"
+
+		var descPtr, locPtr *string
+		if desc != nil {
+			d := desc.Value
+			descPtr = &d
+		}
+		if loc != nil {
+			l := loc.Value
+			locPtr = &l
+		}
+		var priorityPtr *int32
+		if priority != nil {
+			p, _ := strconv.Atoi(priority.Value)
+			p32 := int32(p)
+			priorityPtr = &p32
+		} else {
+			val := int32(0)
+			priorityPtr = &val
+		}
+
+		eventID := e.GetProperty(ics.ComponentPropertyUniqueId).Value
+
+		_ = database.Db.Queries.DeleteEvent(c, eventID)
+		_, err := database.Db.Queries.CreateEvent(c, sqlc.CreateEventParams{
+			EventID:     eventID,
+			CalendarID:  calendar.CalendarID,
+			Name:        e.GetProperty(ics.ComponentPropertySummary).Value,
+			Description: descPtr,
+			Location:    locPtr,
+			StartTime:   start,
+			EndTime:     end,
+			AllDay:      allDay,
+			Priority:    priorityPtr,
+		})
+		if err != nil {
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"calendar_id": calendar.CalendarID})
+	return &calendar, nil
 }
