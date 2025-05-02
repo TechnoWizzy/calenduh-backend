@@ -119,7 +119,7 @@ func setupRoutes(router *gin.Engine) {
 		files.DELETE("/profile", controllers.LoggedIn, controllers.DeleteProfilePicture)
 		files.GET("/profile/url", controllers.LoggedIn, controllers.GetProfilePictureURL)
 		files.POST("/uploadEventImage/:calendar_id/:event_id", controllers.LoggedIn, controllers.CreateEventImage)
-		files.PUT("/updateEventImage/:calendar_id/:event_id", controllers.LoggedIn, controllers.UpdateEventImage)
+		// files.PUT("/updateEventImage/:calendar_id/:event_id", controllers.LoggedIn, controllers.UpdateEventImage)
 		files.DELETE("/deleteEventImage/:calendar_id/:event_id", controllers.LoggedIn, controllers.DeleteEventImage)
 	}
 	{ // Users
