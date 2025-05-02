@@ -5,6 +5,7 @@ import (
 	"calenduh-backend/internal/sqlc"
 	"calenduh-backend/internal/util"
 	"errors"
+	"fmt"
 	"github.com/arran4/golang-ical"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -155,6 +156,16 @@ func GetCalendarICal(c *gin.Context, calendarId string) {
 
 		if event.Priority != nil {
 			icalEvent.SetPriority(int(*event.Priority))
+		}
+
+		if event.Frequency != nil {
+			rrule, err := cronToRRule(*event.Frequency)
+			if err != nil {
+				// Handle error or log unsupported cron
+				fmt.Printf("Could not convert cron to RRULE: %v\n", err)
+			} else {
+				icalEvent.AddRrule(rrule)
+			}
 		}
 	}
 
@@ -616,4 +627,62 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 	log.Printf("%d events created\n", createdEvents)
 
 	return &calendar, nil
+}
+
+// Simple cron to RRULE converter for common cases
+func cronToRRule(cron string) (string, error) {
+	// Split cron string
+	parts := strings.Fields(cron)
+	if len(parts) != 5 {
+		return "", fmt.Errorf("unsupported cron format: %s", cron)
+	}
+
+	minute, hour, dom, month, dow := parts[0], parts[1], parts[2], parts[3], parts[4]
+
+	// Daily
+	if dom == "*" && month == "*" && dow == "*" {
+		return fmt.Sprintf("FREQ=DAILY;BYHOUR=%s;BYMINUTE=%s", hour, minute), nil
+	}
+	// Weekly
+	if dom == "*" && month == "*" && dow != "*" {
+		// Map cron DOW (0=Sunday) to RRULE (SU,MO,...)
+		days := map[string]string{
+			"0": "SU", "1": "MO", "2": "TU", "3": "WE",
+			"4": "TH", "5": "FR", "6": "SA",
+		}
+		dowParts := strings.Split(dow, ",")
+		var rruleDays []string
+		for _, d := range dowParts {
+			if val, ok := days[d]; ok {
+				rruleDays = append(rruleDays, val)
+			}
+		}
+		return fmt.Sprintf(
+			"FREQ=WEEKLY;BYDAY=%s;BYHOUR=%s;BYMINUTE=%s",
+			strings.Join(rruleDays, ","),
+			hour,
+			minute,
+		), nil
+	}
+	// Monthly
+	if dom != "*" && month == "*" && dow == "*" {
+		return fmt.Sprintf(
+			"FREQ=MONTHLY;BYMONTHDAY=%s;BYHOUR=%s;BYMINUTE=%s",
+			dom,
+			hour,
+			minute,
+		), nil
+	}
+	// Yearly
+	if dom != "*" && month != "*" && dow == "*" {
+		return fmt.Sprintf(
+			"FREQ=YEARLY;BYMONTH=%s;BYMONTHDAY=%s;BYHOUR=%s;BYMINUTE=%s",
+			month,
+			dom,
+			hour,
+			minute,
+		), nil
+	}
+
+	return "", fmt.Errorf("unsupported cron pattern: %s", cron)
 }
