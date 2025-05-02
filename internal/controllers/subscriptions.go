@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"log"
 	"net/http"
 )
 
@@ -26,11 +27,14 @@ func GetAllSubscriptions(c *gin.Context) {
 
 func CreateSubscription(c *gin.Context) {
 	user := *ParseUser(c)
+	log.Println("Handling Create Subscription")
 	var input sqlc.CreateSubscriptionParams
 	if err := c.BindJSON(&input); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	log.Println("Input: ", input.CalendarID, input.InviteCode, input.UserID)
 
 	input.UserID = user.UserID
 

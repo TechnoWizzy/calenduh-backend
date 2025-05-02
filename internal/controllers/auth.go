@@ -15,7 +15,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"io"
-	"log"
 	"math/big"
 	"net/http"
 	"net/url"
