@@ -559,6 +559,5 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"calendar_id": calendar.CalendarID})
 	return &calendar, nil
 }
