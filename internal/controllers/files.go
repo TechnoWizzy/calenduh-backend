@@ -230,11 +230,50 @@ func CreateEventImage(c *gin.Context) {
 }
 
 func DeleteEventImage(c *gin.Context) {
-	// todo
-}
+    eventID := c.Param("event_id")
+    if eventID == "" {
+        c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "event_id is required"})
+        return
+    }
 
-func UpdateEventImage(c *gin.Context) {
-	// todo
+    calendarID := c.Param("calendar_id")
+    if calendarID == "" {
+        c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "calendar_id is required"})
+        return
+    }
+
+	event, err := database.Db.Queries.GetEventById(c, eventID)
+    if err != nil {
+        c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "event not found"})
+        return
+    }
+
+    if event.Img == nil || *event.Img == "" {
+        c.Status(http.StatusOK)
+        return
+    }
+
+	// delete image from s3
+    if err := deleteFile(*event.Img); err != nil {
+        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+            "error": "failed to delete image from storage",
+        })
+        return
+    }
+
+    _, err = database.Db.Queries.UpdateEventImage(c, sqlc.UpdateEventImageParams{
+        EventID:    eventID,
+        CalendarID: calendarID,
+        Img:        nil, // set to null
+    })
+    if err != nil {
+        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+            "error": "failed to delete event image",
+        })
+        return
+    }
+
+    c.Status(http.StatusOK)
 }
 
 func DeleteFile(c *gin.Context) {
