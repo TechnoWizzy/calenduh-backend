@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -514,9 +515,16 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 		return nil, err
 	}
 
+	log.Printf("%d events on calendar\n", len(cal.Events()))
 	for _, e := range cal.Events() {
-		start, _ := e.GetStartAt()
-		end, _ := e.GetEndAt()
+		start, err := e.GetStartAt()
+		if err != nil {
+			continue
+		}
+		end, err := e.GetEndAt()
+		if err != nil {
+			continue
+		}
 		desc := e.GetProperty(ics.ComponentPropertyDescription)
 		loc := e.GetProperty(ics.ComponentPropertyLocation)
 		priority := e.GetProperty(ics.ComponentPropertyPriority)
@@ -544,7 +552,7 @@ func SaveICal(c *gin.Context, cal *ics.Calendar, isWebBased bool, url *string) (
 		eventID := e.GetProperty(ics.ComponentPropertyUniqueId).Value
 
 		_ = database.Db.Queries.DeleteEvent(c, eventID)
-		_, err := database.Db.Queries.CreateEvent(c, sqlc.CreateEventParams{
+		_, err = database.Db.Queries.CreateEvent(c, sqlc.CreateEventParams{
 			EventID:     eventID,
 			CalendarID:  calendar.CalendarID,
 			Name:        e.GetProperty(ics.ComponentPropertySummary).Value,
